@@ -12,6 +12,7 @@
    <meta name="keywords" content="" />
    <link href="/src/shared/pure.css" rel="stylesheet" type="text/css" />
    <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/eruda"></script>
+   <script type="application/javascript" src="https://js.hcaptcha.com/1/api.js?hl=en&amp;recaptchacompat=on"></script>
    <script type="text/javascript" src="/src/shared/index.js"></script>
    <link type="text/css" href="/src/shared/index.css" rel="stylesheet" />
    <link type="text/css" href="/src/contact/main.css" rel="stylesheet" />
@@ -47,28 +48,36 @@
       </div>
      </div>
      <div class="wrapper tab-list" style="margin-bottom:0">
-      <div class="full-width-form">
+      <div class="full-width-form" action="/go/join-htx" method="POST" type="application/x-www-form-urlencoded">
        <form class="pure-form pure-form-stacked pure-form-aligned">
         <label>Name / Given Name</label>
         <div class="divider"></div>
         <hr />
         <div class="divider"></div>
-        <input placeholder="" class="form-input" type="text" name="givenName" />
+        <input placeholder="Ex: John Doe / Jane Doe" class="form-input" type="text" name="givenName" required="true" />
         <label>Your Industry</label>
         <div class="divider"></div>
         <hr />
         <div class="divider"></div>
-        <input placeholder="" class="form-input" type="text" name="industry" />
+        <input placeholder="Ex: Landscaping" class="form-input" type="text" name="industry" required="true" />
         <label>Email</label>
         <div class="divider"></div>
         <hr />
         <div class="divider"></div>
-        <input placeholder="Username@Website.Ext" class="form-input" type="email" name="email" />
+        <input placeholder="Username@Website.Ext" class="form-input" type="email" name="email" required="true" />
         <label>Message</label>
         <div class="divider"></div>
         <hr />
         <div class="divider"></div>
-        <textarea class="form-input"></textarea>
+        <textarea placeholder="Hello, I am interested in discussing Houston Buisness Group to join alongside its mission." class="form-input" maxlength="960" minlength="0" required="true"></textarea>
+        <label>
+         Subscribe to mailing list?
+         <input value="true" type="checkbox" />
+         <div class="divider"></div>
+         <hr />
+         <div class="divider"></div>
+        </label>
+        <div class="h-captcha" data-sitekey="884a606e-fd98-4c56-a6ca-f7004ddcbe5a" data-theme="dark" data-size="compact"></div>
         <button class="pure-button pure-button-primary">SUBMIT</button>
        </form>
       </div>

@@ -42,6 +42,7 @@
       ["keywords", ""],
       "/src/shared/pure.css",
       "https://cdn.jsdelivr.net/npm/eruda",
+      "https://js.hcaptcha.com/1/api.js?hl=en&recaptchacompat=on",
       "/src/shared/index.js",
       "/src/shared/index.css",
       "/src/contact/main.css"

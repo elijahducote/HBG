@@ -74,6 +74,10 @@ div.wrapper.topnav div svg {
   object-fit:cover;
 }
 
+div.wrapper.topnav div h2, div.wrapper.topnav div svg {
+  transition: 0.56s ease opacity, 0.56s ease filter;
+}
+
 div.wrapper.topnav div h2 {
   display:none !important;
   visibility:hidden !important;
@@ -84,10 +88,13 @@ div.wrapper.topnav div h2 {
   color: #FFF;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  user-select: none;
+}
+
 div.wrapper.topnav div {
   background: var(--base-bg);
   /*background: var(--topnav-bg);*/
-  transition: 3s opacity ease-in, 3s filter ease-in;
   display:flex;
   align-items:center;
   justify-content:center;

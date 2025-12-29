@@ -1,4 +1,4 @@
-input {
+input, textarea {
   text-align: center;
 }
 
@@ -7,6 +7,7 @@ input {
     display: block;
 }
 .full-width-form button {
+  margin-top:0.875em;
   padding: .75em;
   border-radius: 0.75em;
   font-size: 1.125em;
@@ -40,4 +41,26 @@ input {
 input[type="email"] {
   width: 75% !important;
   margin: 0 auto !important;
+}
+
+input[type="checkbox"] {
+  width: 1em;  /* Or 1.5em, etc. */
+  height: 1em; /* Or 1.5em, etc. */
+  accent-color: green !important;
+}
+
+div.h-captcha iframe {
+  transform:scale(1.625);
+  height: 18em;
+  border-width: 0.05em !important;
+  position: relative;
+  box-sizing:border-box;
+  transform-origin:center;
+}
+div.h-captcha {
+  padding-top: 2em;
+  padding-bottom: 1em;
+}
+label {
+  user-select: none;
 }
