@@ -1,0 +1,33 @@
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 
+      /* Inset glow */
+      inset 0 -0.2em 0.4em rgba(64, 84, 101, 0.15),
+      /* Outer glow - bottom, right, left */
+      0 0.08em 0.2em rgba(255, 255, 255, 0.3),      /* bottom */
+      0.08em 0 0.2em rgba(255, 255, 255, 0.3),      /* right */
+      -0.08em 0 0.2em rgba(255, 255, 255, 0.3);     /* left */
+  }
+  50% {
+    box-shadow: 
+      /* Inset glow */
+      inset 0 -0.3em 0.6em rgba(64, 84, 101, 0.25),
+      /* Main outer glow */
+      0 0 0.8em 0.2em rgba(255, 255, 255, 0.3),
+      /* Directional glows - bottom, right, left */
+      0 0.15em 0.4em rgba(255, 255, 255, 0.5),      /* bottom */
+      0.15em 0 0.4em rgba(255, 255, 255, 0.5),      /* right */
+      -0.15em 0 0.4em rgba(255, 255, 255, 0.5);     /* left */
+  }
+}
+
+@keyframes rt {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fadeout {
+  100% {
+    opacity:0.0;
+  }
+}
