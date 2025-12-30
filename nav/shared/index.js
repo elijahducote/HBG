@@ -108,23 +108,22 @@ function isCurrentNav(index) {
 
 
 function simulateLinkClick(url, target = "_self") {
-    // Ensure URL is absolute
+    // Ensure URL is absolute (starts with /)
     if (!url.startsWith('/') && !url.startsWith('http')) {
-        if (url.endsWith("/")) url = url.substring(0, url.length - 1);
         url = '/' + url;
     }
     
     leavingPage = true;
     initAnimations();
     
-    // Wait for animation to complete (adjust timeout to match animation duration)
+    // Add slight delay for animations to start
     setTimeout(() => {
         if (target === "_blank" || target === "_new") {
             window.open(url, target);
         } else {
             window.location.href = url;
         }
-    }, 500); // Match your animation duration
+    }, 50); // Adjust timing based on your animation duration
 }
 
 function updateNavIcons() {
@@ -197,10 +196,23 @@ function initScrollHandler() {
   
   if (!scrollContainer || !footer) return;
   
+  // 1. Existing scroll and resize listeners
   scrollContainer.addEventListener("scroll", throttle(checkOverlapAndScroll, 100));
   window.addEventListener("resize", throttle(checkOverlapAndScroll, 200));
+
+  // 2. NEW: Watch for content changes (e.g. images loading, dynamic content)
+  const tabList = document.querySelector("div.wrapper.tab-list");
+  if (tabList) {
+    const resizeObserver = new ResizeObserver(throttle(() => {
+        checkOverlapAndScroll();
+    }, 100));
+    resizeObserver.observe(tabList);
+    
+    // Also observe children to catch specific element resizing
+    Array.from(tabList.children).forEach(child => resizeObserver.observe(child));
+  }
   
-  // Initial check with slight delay to ensure layout is ready
+  // Initial check
   setTimeout(checkOverlapAndScroll, 100);
 }
 
@@ -215,28 +227,24 @@ function checkOverlapAndScroll() {
   
   const footerRect = footer.getBoundingClientRect();
   
-  // Get all child elements that have actual content
-  const contentElements = tabList.querySelectorAll("section, div, h1, h2, p, svg, hr");
+  // ROBUST FIX: Check all direct children instead of specific tags
+  const contentElements = tabList.children; 
   
-  // If no content, show footer
   if (contentElements.length === 0) {
     setFooterVisibility(true);
     return;
   }
   
-  // Find the actual bottom of content by checking all elements
   let actualContentBottom = 0;
   for (let i = 0; i < contentElements.length; i++) {
     const rect = contentElements[i].getBoundingClientRect();
-    if (rect.bottom > actualContentBottom && rect.height > 0) {
+    // Check rect.bottom to find the lowest point
+    if (rect.bottom > actualContentBottom) {
       actualContentBottom = rect.bottom;
     }
   }
   
-  // Check if content overlaps footer
   const hasOverlap = actualContentBottom > footerRect.top;
-  
-  // Hide footer if overlapping, show if not
   setFooterVisibility(!hasOverlap);
 }
 
@@ -263,27 +271,20 @@ function setFooterVisibility(visible) {
 function initSmoothScroll() {
   if (!scrollContainer) return;
   
-  // Detect if device supports touch (mobile/tablet)
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  
-  // On mobile, use native scrolling entirely
-  if (isTouchDevice) {
-    scrollContainer.style.scrollBehavior = 'smooth';
-    return;
-  }
-  
-  // Desktop smooth scrolling
+  // State variables
   let targetScroll = scrollContainer.scrollTop;
   let currentScroll = scrollContainer.scrollTop;
   let isAnimating = false;
   let animationId = null;
-  let useNativeScroll = false;
   
-  // Detect middle-click auto-scroll
+  // Flags to detect native override behaviors
+  let useNativeScroll = false;
   let middleClickActive = false;
   
+  // 1. Handle Middle-Click (Auto-scroll)
+  // We must detect this to disable our interference while the user is auto-scrolling
   scrollContainer.addEventListener('mousedown', function(e) {
-    if (e.button === 1) {
+    if (e.button === 1) { // Middle mouse button
       middleClickActive = true;
       useNativeScroll = true;
     }
@@ -292,7 +293,7 @@ function initSmoothScroll() {
   document.addEventListener('mouseup', function(e) {
     if (e.button === 1) {
       middleClickActive = false;
-      // Re-sync after middle-click ends
+      // Re-sync positions after middle-click scroll ends
       setTimeout(() => {
         targetScroll = scrollContainer.scrollTop;
         currentScroll = scrollContainer.scrollTop;
@@ -301,37 +302,51 @@ function initSmoothScroll() {
     }
   });
   
-  // Intercept wheel events for smooth scrolling
+  // 2. The Main Wheel Listener
+  // We removed the "isTouchDevice" check. Now we only intercept if it's actually a mouse wheel event.
   scrollContainer.addEventListener('wheel', function(e) {
-    // Don't interfere with middle-click scrolling or shift+wheel
-    if (middleClickActive || e.shiftKey || useNativeScroll) {
+    // Allow native behavior for:
+    // - Middle-click auto-scrolling
+    // - Shift+Wheel (Horizontal scrolling)
+    // - Ctrl+Wheel (Pinch to zoom)
+    if (middleClickActive || e.shiftKey || e.ctrlKey || useNativeScroll) {
       return;
     }
     
+    // Prevent default browser scrolling so we can handle it
     e.preventDefault();
+    
+    // Calculate delta (0.25 is the speed factor - adjust as needed)
     targetScroll += e.deltaY * 0.25;
+    
+    // Clamp the target to the scroll bounds
     targetScroll = Math.max(0, Math.min(targetScroll, scrollContainer.scrollHeight - scrollContainer.clientHeight));
     
+    // Start animation loop if not already running
     if (!isAnimating) {
       isAnimating = true;
       animate();
     }
-  }, { passive: false });
+  }, { passive: false }); // passive: false is required to use preventDefault()
   
+  // 3. The Animation Loop
   function animate() {
+    // If user switched to native scrolling (middle click), stop animating custom physics
     if (useNativeScroll || middleClickActive) {
       isAnimating = false;
       return;
     }
     
     const diff = targetScroll - currentScroll;
+    const delta = Math.abs(diff);
     
-    if (Math.abs(diff) > 0.5) {
-      currentScroll += diff * 0.1;
+    // Stop animation when we are close enough (pixel perfect)
+    if (delta > 0.5) {
+      currentScroll += diff * 0.1; // Easing factor (0.1 = smooth, 0.5 = snappy)
       scrollContainer.scrollTop = currentScroll;
       animationId = requestAnimationFrame(animate);
     } else {
-      // Animation complete
+      // Snap to exact target when finished to prevent micro-jitters
       currentScroll = targetScroll;
       scrollContainer.scrollTop = currentScroll;
       isAnimating = false;
