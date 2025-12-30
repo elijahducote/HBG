@@ -166,6 +166,8 @@ hr {
   width:13em !important;
   max-width:100%;
   margin: 0 auto;
+	margin-top: 0.25em;
+  margin-bottom: 0.25em;
 }
 .text-card {
   /* Positioning & isolation */
@@ -354,4 +356,9 @@ svg.spinner {
   width:2em !important;
   height:2em !important;
   opacity:1 !important;
+}
+img.cover {
+  max-width: 100%;
+  height: auto;
+  width:15em;
 }
