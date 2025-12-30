@@ -13,7 +13,6 @@
       ["description", "Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area."],
       ["keywords", ""],
       "https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css",
-      "https://cdn.jsdelivr.net/npm/eruda",
       "/src/shared/index.js",
       "/src/shared/index.css",
       "/src/home/main.css"
@@ -27,10 +26,8 @@
       ["description", "Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area."],
       ["keywords", ""],
       "https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css",
-      "https://cdn.jsdelivr.net/npm/eruda",
       "/src/shared/index.js",
-      "/src/shared/index.css",
-      "/src/events/main.css"
+      "/src/shared/index.css"
     ]
   },
   "contact": {
@@ -41,7 +38,6 @@
       ["description", "Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area."],
       ["keywords", ""],
       "/src/shared/pure.css",
-      "https://cdn.jsdelivr.net/npm/eruda",
       "https://js.hcaptcha.com/1/api.js?hl=en&recaptchacompat=on",
       "/src/shared/index.js",
       "/src/shared/index.css",

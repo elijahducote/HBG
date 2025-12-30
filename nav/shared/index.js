@@ -62,12 +62,13 @@ function initNavHoverEffects() {
   }
   
   // Check if nav item at index corresponds to current page
-  function isCurrentNav(index) {
-    const icon = navIcons[index],
-          dataLink = icon.parentElement.dataset.link || "/",
-          normalizedLink = dataLink === "/" ? "home" : dataLink;
-    return normalizedLink === currentPath;
-  }
+function isCurrentNav(index) {
+  const icon = navIcons[index],
+        dataLink = icon.parentElement.dataset.link || "/",
+        // Normalize by removing leading slash from dataLink
+        normalizedLink = dataLink === "/" ? "home" : dataLink.replace(/^\//, "");
+  return normalizedLink === currentPath;
+}
   
   // Reset all nav items to default state (active glows, others dimmed)
   function resetToDefault() {
@@ -151,7 +152,8 @@ function updateNavIcons() {
     icon = navIcons[ndx];
     text = navText[ndx];
     dataLink = icon.parentElement.dataset.link || "/";
-    normalizedLink = dataLink === "/" ? "home" : dataLink;
+    // Normalize by removing leading slash
+    normalizedLink = dataLink === "/" ? "home" : dataLink.replace(/^\//, "");
     if (normalizedLink === currentPath) icon.parentElement.style.animation = "glow 4s ease-in-out infinite";
     else {
       Object.assign(icon.style, {opacity:".75", filter:"grayscale(50%)"});
