@@ -171,7 +171,6 @@ let scrollContainer = null,
     footer = null,
     footerStyle = null,
     sections = [];
-// Replace the initScrollHandler and checkOverlapAndScroll functions with these:
 
 function initScrollHandler() {
   const containers = document.querySelectorAll("div.container");
@@ -257,22 +256,80 @@ function setFooterVisibility(visible) {
 function initSmoothScroll() {
   if (!scrollContainer) return;
   
+  // Detect if device supports touch (mobile/tablet)
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  
+  // On mobile, use native scrolling entirely
+  if (isTouchDevice) {
+    scrollContainer.style.scrollBehavior = 'smooth';
+    return;
+  }
+  
+  // Desktop smooth scrolling
   let targetScroll = scrollContainer.scrollTop;
   let currentScroll = scrollContainer.scrollTop;
+  let isAnimating = false;
+  let animationId = null;
+  let useNativeScroll = false;
   
+  // Detect middle-click auto-scroll
+  let middleClickActive = false;
+  
+  scrollContainer.addEventListener('mousedown', function(e) {
+    if (e.button === 1) {
+      middleClickActive = true;
+      useNativeScroll = true;
+    }
+  });
+  
+  document.addEventListener('mouseup', function(e) {
+    if (e.button === 1) {
+      middleClickActive = false;
+      // Re-sync after middle-click ends
+      setTimeout(() => {
+        targetScroll = scrollContainer.scrollTop;
+        currentScroll = scrollContainer.scrollTop;
+        useNativeScroll = false;
+      }, 100);
+    }
+  });
+  
+  // Intercept wheel events for smooth scrolling
   scrollContainer.addEventListener('wheel', function(e) {
+    // Don't interfere with middle-click scrolling or shift+wheel
+    if (middleClickActive || e.shiftKey || useNativeScroll) {
+      return;
+    }
+    
     e.preventDefault();
     targetScroll += e.deltaY * 0.25;
     targetScroll = Math.max(0, Math.min(targetScroll, scrollContainer.scrollHeight - scrollContainer.clientHeight));
+    
+    if (!isAnimating) {
+      isAnimating = true;
+      animate();
+    }
   }, { passive: false });
   
   function animate() {
-    currentScroll += (targetScroll - currentScroll) * 0.1; // Easing factor
-    scrollContainer.scrollTop = currentScroll;
-    requestAnimationFrame(animate);
+    if (useNativeScroll || middleClickActive) {
+      isAnimating = false;
+      return;
+    }
+    
+    const diff = targetScroll - currentScroll;
+    
+    if (Math.abs(diff) > 0.5) {
+      currentScroll += diff * 0.1;
+      scrollContainer.scrollTop = currentScroll;
+      animationId = requestAnimationFrame(animate);
+    } else {
+      // Animation complete
+      currentScroll = targetScroll;
+      scrollContainer.scrollTop = currentScroll;
+      isAnimating = false;
+    }
   }
-  
-  animate();
 }
 
 window.addEventListener("DOMContentLoaded", function() {

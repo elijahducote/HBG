@@ -57,6 +57,8 @@ div.wrapper.topnav div:last-child {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-wrap: break-word;
+    word-break: normal;
     margin: 0;
 }
 button {
@@ -319,7 +321,7 @@ div.wrapper.tab-list {
   right: auto;
   margin-top: 0;
   padding-top: 0;
-  padding-bottom: 5em; 
+  padding-bottom: 6em; 
   min-height: calc(100vh - 3em);
   display: flex;
   flex-direction: column;

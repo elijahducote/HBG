@@ -7,7 +7,6 @@ import { prettify, closify } from "htmlfy";
 import van from "mini-van-plate";
 import { htm } from "./bits/utility.js";
 import sitemap from "./sitemap.json";
-import {createFavicon} from "create-favicon";
 
 import {
   // Generics
@@ -54,6 +53,7 @@ async function processHTML(nav) {
     if (isErr) tab = undefined;
     else tab = tab(tags);
     try {
+      const {createFavicon} = await import("create-favicon");
       const {html: output} = await createFavicon({
         sourceFile: './nav/icons/HBG.svg',
         outputDir: `./dploy/icons/${nomer}`,

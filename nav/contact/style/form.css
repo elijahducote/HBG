@@ -38,11 +38,6 @@ input, textarea {
     padding: 0.125em !important;
 }
 
-input[type="email"] {
-  width: 75% !important;
-  margin: 0 auto !important;
-}
-
 input[type="checkbox"] {
   width: 1em;  /* Or 1.5em, etc. */
   height: 1em; /* Or 1.5em, etc. */
