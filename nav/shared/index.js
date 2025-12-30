@@ -110,6 +110,7 @@ function isCurrentNav(index) {
 function simulateLinkClick(url, target = "_self") {
     // Ensure URL is absolute
     if (!url.startsWith('/') && !url.startsWith('http')) {
+        if (url.endsWith("/")) url = url.substring(0, url.length - 1);
         url = '/' + url;
     }
     
