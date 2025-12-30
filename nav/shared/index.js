@@ -109,17 +109,23 @@ function initNavHoverEffects() {
 
 
 function simulateLinkClick(url, target = "_self") {
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = target;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Ensure URL is absolute
+    if (!url.startsWith('/') && !url.startsWith('http')) {
+        url = '/' + url;
+    }
+    
     leavingPage = true;
     initAnimations();
+    
+    // Wait for animation to complete (adjust timeout to match animation duration)
+    setTimeout(() => {
+        if (target === "_blank" || target === "_new") {
+            window.open(url, target);
+        } else {
+            window.location.href = url;
+        }
+    }, 500); // Match your animation duration
 }
-
 
 function updateNavIcons() {
   const currentPath = window.location.pathname.substring(1) || "home",
