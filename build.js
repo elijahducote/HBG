@@ -119,7 +119,8 @@ async function runBuild() {
     "--pure=window.alert",
     "--css-chunking",
     "--external=*.woff2",
-    "--external=*.woff"
+    "--external=*.woff",
+    "--external=*.png"
   ],
   {
     env: {
