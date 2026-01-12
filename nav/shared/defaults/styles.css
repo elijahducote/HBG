@@ -11,7 +11,7 @@ body, html {
   scroll-behavior: smooth;
   font-family: var(--base-font);
   color: var(--base-text-hex);
-  background-image: linear-gradient(rgba(0, 0, 0, .5), rgba(0, 0, 0, .5)),url("/cdn/shared/bg.png");
+  background-image: linear-gradient(rgba(0, 0, 0, .4375), rgba(0, 0, 0, .4375)),url("/cdn/shared/bg.png");
   background-color: #FFF;
   background-size: cover;
   background-position: center;
