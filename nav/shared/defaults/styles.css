@@ -11,7 +11,7 @@ body, html {
   scroll-behavior: smooth;
   font-family: var(--base-font);
   color: var(--base-text-hex);
-  background-image: linear-gradient(rgba(0, 0, 0, .4375), rgba(0, 0, 0, .4375)),url("/cdn/shared/bg.png");
+  background-image: linear-gradient(rgba(0, 0, 0, .375), rgba(0, 0, 0, .375)),url("/cdn/shared/bg.png");
   background-color: #FFF;
   background-size: cover;
   background-position: center;
@@ -175,6 +175,7 @@ hr {
 }
 .text-card {
   /* Positioning & isolation */
+  text-shadow: 0 .05em .1em rgba(0, 0, 0, 0.625), 0 .25em .375em rgba(0, 0, 0, 0.4375), 0 .5em .5em rgba(0, 0, 0, 0.5);
   position: relative;
   isolation: isolate;
   z-index: 1;
@@ -215,7 +216,7 @@ hr {
   border-radius: .625em;
   
   /* Neumorphic gradient background */
-  background: linear-gradient(145deg, #4c4c4c, #232323);
+  background: linear-gradient(145deg,rgba(76, 76, 76, .75),rgba(35, 35, 35, .625));
   
   /* Selective inset borders (geometric interest) */
   border-top: none;
