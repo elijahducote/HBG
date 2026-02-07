@@ -1,10 +1,12 @@
 // home.js
 import {htm} from "../../bits/utility.js";
+import {VideoPlayer,bgVideoConfig} from "../../bits/ntry.js";
 
 export default function Home(tags) {
   const top = [
     // Logo SVG
-    htm(tags, 
+    VideoPlayer(tags,bgVideoConfig),
+    htm(tags,
       htm(tags, undefined, "path",
       {
         fill: "#fff",
@@ -21,8 +23,8 @@ export default function Home(tags) {
         viewBox: "0 0 1833 802"
       }
     ),
-    // "’s Mission" heading
-    htm(tags, "’s Mission", "h1"),
+    // "'s Mission" heading
+    htm(tags, "'s Mission", "h1"),
 
     // Dividers
     htm(tags, undefined, "div", {class: "divider"}),

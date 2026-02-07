@@ -8,6 +8,15 @@ import {
   Footer
 } from "./layout/layout.js";
 
+import {
+  VideoPlayer,
+  defaultVideoConfig
+} from "./media/video.js";
+
+import {
+  bgVideoConfig
+} from "./media/bg-video.js";
+
 export {
   // Generics
   Body,
@@ -15,5 +24,10 @@ export {
 
   // Layout
   Interface,
-  Footer
+  Footer,
+
+  // Media
+  VideoPlayer,
+  bgVideoConfig,
+  defaultVideoConfig
 };

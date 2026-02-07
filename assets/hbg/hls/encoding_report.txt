@@ -1,0 +1,86 @@
+===============================================================================
+HLS Encoding Report
+Generated: Mon 02/02/2026  2:10:58.74
+===============================================================================
+
+SOURCE FILE: E:\TrifectShow\HBG.mp4
+OUTPUT DIRECTORY: ./assets/hbg/hsl
+SEGMENT DURATION: 2s
+
+SOURCE PROPERTIES:
+  - Framerate: 60 fps
+  - Color Space: bt709
+  - Color Primaries: bt709
+  - Transfer Characteristics: bt709
+  - Pixel Format: yuv420p
+  - Audio: Yes (2 channels, 44100 Hz) 
+ 
+ENCODED VARIANTS: 
+  1080p60:
+    - Resolution: 1920x1080
+    - Framerate: 60fps
+    - Video Bitrate: 8000k (CRF: 18, Max: 9000k)
+    - Audio Bitrate: 192k 
+    - Playlist: 1080p60.m3u8 
+  936p40:
+    - Resolution: 1664x936
+    - Framerate: 40fps
+    - Video Bitrate: 5500k (CRF: 19, Max: 6200k)
+    - Audio Bitrate: 160k 
+    - Playlist: 936p40.m3u8 
+  810p50:
+    - Resolution: 1440x810
+    - Framerate: 50fps
+    - Video Bitrate: 4500k (CRF: 20, Max: 5000k)
+    - Audio Bitrate: 160k 
+    - Playlist: 810p50.m3u8 
+  720p60:
+    - Resolution: 1280x720
+    - Framerate: 60fps
+    - Video Bitrate: 4000k (CRF: 20, Max: 4500k)
+    - Audio Bitrate: 128k 
+    - Playlist: 720p60.m3u8 
+  576p48:
+    - Resolution: 1024x576
+    - Framerate: 48fps
+    - Video Bitrate: 2500k (CRF: 21, Max: 2800k)
+    - Audio Bitrate: 128k 
+    - Playlist: 576p48.m3u8 
+  480p30:
+    - Resolution: 854x480
+    - Framerate: 30fps
+    - Video Bitrate: 1500k (CRF: 22, Max: 1700k)
+    - Audio Bitrate: 96k 
+    - Playlist: 480p30.m3u8 
+  360p30:
+    - Resolution: 640x360
+    - Framerate: 30fps
+    - Video Bitrate: 800k (CRF: 23, Max: 900k)
+    - Audio Bitrate: 64k 
+    - Playlist: 360p30.m3u8 
+
+FILES GENERATED:
+  - Master Playlist: master.m3u8
+  - 1080p60.m3u8 + segments
+  - 936p40.m3u8 + segments
+  - 810p50.m3u8 + segments
+  - 720p60.m3u8 + segments
+  - 576p48.m3u8 + segments
+  - 480p30.m3u8 + segments
+  - 360p30.m3u8 + segments
+  - thumbnails/sprite.jpg (single sprite sheet with all thumbnails)
+  - thumbnails.vtt (WebVTT with Media Fragment URIs for player scrubbing)
+
+THUMBNAIL SPRITE INFO:
+  - Individual thumbnail size: 160x90 pixels
+  - Grid layout: 10 columns
+  - VTT format uses #xywh= Media Fragment URIs for efficient single-request loading
+
+PLAYBACK:
+  Use master.m3u8 with any HLS-compatible player.
+  Players will automatically select appropriate quality based on bandwidth.
+
+  For thumbnail previews, load thumbnails.vtt and sprite.jpg
+  Compatible with Video.js, JW Player, Shaka Player, and other players
+  that support WebVTT thumbnail tracks with sprite sheets.
+===============================================================================

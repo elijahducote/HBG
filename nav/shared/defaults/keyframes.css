@@ -31,3 +31,47 @@
     opacity:0.0;
   }
 }
+@keyframes glower {
+  0% {
+    box-shadow:
+      /* Inset shadows (constant) */
+      inset 0 -0.958em 1.041em rgba(31, 38, 135, 0.2),
+      inset 0 -1.5em 1.25em rgba(31, 38, 135, 0.15),
+      inset 0 -3.291em 1.666em rgba(31, 38, 135, 0.1),
+      /* Outer shadows - bottom, right, left (constant) */
+      0 0.2em 0.5em 0 rgba(31, 38, 135, 0.57),
+      0.2em 0 0.5em 0 rgba(31, 38, 135, 0.57),
+      -0.2em 0 0.5em 0 rgba(31, 38, 135, 0.57),
+      /* Pulsing layers - matched to original animation progression */
+      0 0 0 0 rgba(31, 38, 135, 0.4),           /* tight halo start */
+      0.1em 0.2em 3.5em rgba(31, 38, 135, 0.4);  /* directional glow start */
+  }
+  70% {
+    box-shadow:
+      /* Inset shadows (constant) */
+      inset 0 -0.958em 1.041em rgba(31, 38, 135, 0.2),
+      inset 0 -1.5em 1.25em rgba(31, 38, 135, 0.15),
+      inset 0 -3.291em 1.666em rgba(31, 38, 135, 0.1),
+      /* Outer shadows - bottom, right, left (constant) */
+      0 0.2em 0.5em 0 rgba(31, 38, 135, 0.57),
+      0.2em 0 0.5em 0 rgba(31, 38, 135, 0.57),
+      -0.2em 0 0.5em 0 rgba(31, 38, 135, 0.57),
+      /* Pulsing layers - peak spread + fade */
+      0 0 0 1em rgba(31, 38, 135, 0),
+      0 0 0 rgba(31, 38, 135, 0);
+  }
+  100% {
+    box-shadow:
+      /* Inset shadows (constant) */
+      inset 0 -0.958em 1.041em rgba(31, 38, 135, 0.2),
+      inset 0 -1.5em 1.25em rgba(31, 38, 135, 0.15),
+      inset 0 -3.291em 1.666em rgba(31, 38, 135, 0.1),
+      /* Outer shadows - bottom, right, left (constant) */
+      0 0.2em 0.5em 0 rgba(31, 38, 135, 0.57),
+      0.2em 0 0.5em 0 rgba(31, 38, 135, 0.57),
+      -0.2em 0 0.5em 0 rgba(31, 38, 135, 0.57),
+      /* Pulsing layers - end state (halo faded, directional visible) */
+      0 0 0 0 rgba(31, 38, 135, 0),
+      0.1em 0.2em 3.5em rgba(31, 38, 135, 0.4);
+  }
+}

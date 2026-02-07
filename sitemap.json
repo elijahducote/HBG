@@ -12,10 +12,15 @@
       ["viewport", "width=device-width,initial-scale=1.0"],
       ["description", "Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area."],
       ["keywords", ""],
+      "https://cdn.jsdelivr.net/npm/hls.js@latest",
+      "https://cdn.jsdelivr.net/npm/dashjs@latest/dist/dash.all.min.js",
+      "https://cdn.jsdelivr.net/npm/eruda",
       "https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css",
       "/src/shared/index.js",
+      "/src/shared/video/bg-init.js",
       "/src/shared/index.css",
-      "/src/home/main.css"
+      "/src/home/main.css",
+      "/src/shared/playback.css"
     ]
   },
   "events": {
@@ -26,6 +31,7 @@
       ["description", "Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area."],
       ["keywords", ""],
       "https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css",
+       "https://cdn.jsdelivr.net/npm/eruda",
       "/src/shared/index.js",
       "/src/shared/index.css"
     ]
@@ -39,6 +45,7 @@
       ["keywords", ""],
       "/src/shared/pure.css",
       "https://js.hcaptcha.com/1/api.js?hl=en&recaptchacompat=on",
+     "https://cdn.jsdelivr.net/npm/eruda",
       "/src/shared/index.js",
       "/src/shared/index.css",
       "/src/contact/main.css"

@@ -17,92 +17,39 @@ import {
   Footer
 } from "./bits/ntry.js";
 
+// Get optional page argument
+const targetPage = process.argv[2] || null;
 
-async function processHTML(nav) {
-  // Instance server-side DOM with HTML string
-  const DOM = new JSDOM("<!DOCTYPE html>"),
-  // Get the HTML document + tags
-  {html, tags} = van.vanWithDoc(DOM.window.document),
-  nth = nav?.paths?.length;
-
-  let itR8 = nth,
-  isErr = true,
-  cur,
-  page,
-  nomer,
-  newfyL,
-  webDQment,
-  formatted,
-  tab,
-  icons;
-
-  for (;itR8;--itR8) {
-    cur = nth - itR8;
-    nomer = nav.paths[cur];
-    page = nav?.[nomer];
-    if (!page) continue;
-    await import(`./nav/${nomer}/${nomer}.js`)
-    .then(module => {
-      isErr = false;
-      tab = module.default;
-    })
-    .catch(err => {
-      isErr = true;
-      print(`{fail}*Something's amiss!* When attempting ./${nomer}/${nomer}.js\n${err}{/fail}`);
-    });
-    if (isErr) tab = undefined;
-    else tab = tab(tags);
-    try {
-      const {createFavicon} = await import("create-favicon");
-      const {html: output} = await createFavicon({
-        sourceFile: './nav/icons/HBG.svg',
-        outputDir: `./dploy/icons/${nomer}`,
-        basePath: `/src/icons/${nomer}`,
-        overwrite: true,
-        warn: false,
-        manifest: true,
-      });
-      icons = JSDOM.fragment(output);
-    } catch (err) {
-      print(`{fail}Icons failed for ${nomer}: \n${err}{/fail}`)
-    }
-    webDQment = html({lang:"en-US"},
-      await MetaData(tags, page, icons),
-      Body(tags, {
-        //header: TopNav(tags),
-        main: Interface(tags,tab,nomer),
-        footer: Footer(tags)
-      }, nomer)
-    );
-    
-    formatted = closify(prettify(webDQment,
-    {
-      content_wrap: 0,
-      strict: false,
-      tab_size: 1,
-      tag_wrap: 0
-    }));
-
-    newfyL = Bun.file(`./nav/${nomer}/index.html`);
-    await newfyL.write(formatted)
-    .then((bytes) => {
-      console.log(`Successfully wrote ${bytes} bytes.`);
-    }).catch((err) => {
-      console.error(`Encountered issue: ${err}`);
-    });
-  }
+// Early exit if target page is not in sitemap
+if (targetPage && !sitemap.paths.includes(targetPage)) {
+  print(`{fail}Page "${targetPage}" not found in sitemap, skipping build{/fail}`);
+  process.exit(0);
 }
 
-async function runBuild() {
-  const cssFyl = await glob("./nav/*/*.css"),
-  jsFyl = await glob("./nav/*/index.js"),
-  cmd = Bun.spawn(
+async function runBuild(pageName = null) {
+  let cssFyl, jsFyl, jsVideoFyl;
+
+  if (pageName) {
+    // Only bundle files for the specific page
+    cssFyl = await glob(`./nav/${pageName}/*.css`);
+    jsFyl = await glob(`./nav/${pageName}/index.js`);
+    jsVideoFyl = await glob("./nav/shared/video/*.js");
+  } else {
+    // Bundle all files
+    cssFyl = await glob("./nav/*/*.css");
+    jsFyl = await glob("./nav/*/index.js");
+    jsVideoFyl = await glob("./nav/shared/video/*.js");
+  }
+
+  const cmd = Bun.spawn(
   [
     "bun",
     "build",
     "./nav/shared/index.css",
+    "./nav/shared/playback.css",
     ...cssFyl,
     ...jsFyl,
+    ...jsVideoFyl,
     "--outdir=./dploy",
     "--target=browser",
     "--format=iife",
@@ -133,5 +80,84 @@ async function runBuild() {
   await cmd.exited;
 }
 
-runBuild();
-processHTML(sitemap);
+async function processHTML(nav, pageName = null) {
+  // Run the bundler first (for specific page or all)
+  await runBuild(pageName);
+
+  // Instance server-side DOM with HTML string
+  const DOM = new JSDOM("<!DOCTYPE html>"),
+  // Get the HTML document + tags
+  {html, tags} = van.vanWithDoc(DOM.window.document);
+
+  // Determine which pages to process
+  const pagesToProcess = pageName ? [pageName] : nav.paths;
+
+  let isErr = true,
+  page,
+  newfyL,
+  webDQment,
+  formatted,
+  tab,
+  icons;
+
+  try {
+    const {createFavicon} = await import("create-favicon"),
+    {html: output} = await createFavicon({
+      sourceFile: './nav/icons/HBG.svg',
+      outputDir: `./dploy/icons/`,
+      basePath: `/src/icons/`,
+      overwrite: false,
+      warn: false,
+      manifest: true,
+    });
+    icons = JSDOM.fragment(output);
+  } catch (err) {
+    print(`{fail}Icons failed: \n${err}{/fail}`)
+  }
+
+  for (const nomer of pagesToProcess) {
+    page = nav?.[nomer];
+    if (!page) continue;
+
+    await import(`./nav/${nomer}/${nomer}.js`)
+    .then(module => {
+      isErr = false;
+      tab = module.default;
+    })
+    .catch(err => {
+      isErr = true;
+      print(`{fail}*Something's amiss!* When attempting ./${nomer}/${nomer}.js\n${err}{/fail}`);
+    });
+
+    if (isErr) tab = undefined;
+    else tab = tab(tags);
+
+    webDQment = html({lang:"en-US"},
+      await MetaData(tags, page, icons),
+      Body(tags, {
+        //header: TopNav(tags),
+        main: Interface(tags,tab,nomer),
+        footer: Footer(tags)
+      }, nomer)
+    );
+    
+    formatted = closify(prettify(webDQment,
+    {
+      content_wrap: 0,
+      strict: false,
+      tab_size: 1,
+      tag_wrap: 0
+    }));
+
+    newfyL = Bun.file(`./nav/${nomer}/index.html`);
+    await newfyL.write(formatted)
+    .then((bytes) => {
+      console.log(`Successfully wrote ${bytes} bytes for ${nomer}.`);
+    }).catch((err) => {
+      console.error(`Encountered issue: ${err}`);
+    });
+  }
+}
+
+// Run with optional target page
+processHTML(sitemap, targetPage);

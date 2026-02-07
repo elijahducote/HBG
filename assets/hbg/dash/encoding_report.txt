@@ -1,0 +1,85 @@
+===============================================================================
+DASH Encoding Report
+Generated: Mon 02/02/2026  2:08:42.18
+===============================================================================
+
+SOURCE FILE: E:\TrifectShow\HBG.mp4
+OUTPUT DIRECTORY: ./assets/hbg/dash
+SEGMENT DURATION: 2s
+
+SOURCE PROPERTIES:
+  - Framerate: 60 fps
+  - Color Space: bt709
+  - Color Primaries: bt709
+  - Transfer Characteristics: bt709
+  - Pixel Format: yuv420p
+  - Audio: Yes (2 channels, 44100 Hz) 
+ 
+ENCODED VARIANTS: 
+  1080p60:
+    - Resolution: 1920x1080
+    - Framerate: 60fps
+    - Video Bitrate: 8000k (CRF: 18, Max: 9000k)
+    - Audio Bitrate: 192k 
+    - Stream Index: Video=0, Audio=7 
+  936p40:
+    - Resolution: 1664x936
+    - Framerate: 40fps
+    - Video Bitrate: 5500k (CRF: 19, Max: 6200k)
+    - Audio Bitrate: 160k 
+    - Stream Index: Video=1, Audio=8 
+  810p50:
+    - Resolution: 1440x810
+    - Framerate: 50fps
+    - Video Bitrate: 4500k (CRF: 20, Max: 5000k)
+    - Audio Bitrate: 160k 
+    - Stream Index: Video=2, Audio=9 
+  720p60:
+    - Resolution: 1280x720
+    - Framerate: 60fps
+    - Video Bitrate: 4000k (CRF: 20, Max: 4500k)
+    - Audio Bitrate: 128k 
+    - Stream Index: Video=3, Audio=10 
+  576p48:
+    - Resolution: 1024x576
+    - Framerate: 48fps
+    - Video Bitrate: 2500k (CRF: 21, Max: 2800k)
+    - Audio Bitrate: 128k 
+    - Stream Index: Video=4, Audio=11 
+  480p30:
+    - Resolution: 854x480
+    - Framerate: 30fps
+    - Video Bitrate: 1500k (CRF: 22, Max: 1700k)
+    - Audio Bitrate: 96k 
+    - Stream Index: Video=5, Audio=12 
+  360p30:
+    - Resolution: 640x360
+    - Framerate: 30fps
+    - Video Bitrate: 800k (CRF: 23, Max: 900k)
+    - Audio Bitrate: 64k 
+    - Stream Index: Video=6, Audio=13 
+
+FILES GENERATED:
+  - MPD Manifest: manifest.mpd
+  - Init Segments: init_stream*.m4s
+  - Media Segments: chunk_stream*_*.m4s
+  - thumbnails/sprite.jpg (single sprite sheet with all thumbnails)
+  - thumbnails.vtt (WebVTT with Media Fragment URIs for player scrubbing)
+
+THUMBNAIL SPRITE INFO:
+  - Individual thumbnail size: 160x90 pixels
+  - Grid layout: 10 columns
+  - VTT format uses #xywh= Media Fragment URIs for efficient single-request loading
+
+PLAYBACK:
+  Use manifest.mpd with any DASH-compatible player (dash.js, Shaka Player, etc.)
+  Players will automatically select appropriate quality based on bandwidth.
+
+  For thumbnail previews, load thumbnails.vtt and sprite.jpg
+  Compatible with Video.js, JW Player, Shaka Player, and other players
+  that support WebVTT thumbnail tracks with sprite sheets.
+
+ADAPTATION SETS:
+  - id=0: Video representations (all resolutions)
+  - id=1: Audio representations (all bitrates) 
+=============================================================================== 

@@ -1,6 +1,7 @@
 import {paths as sectionIds} from "../../sitemap.json";
 import {Loader} from "vanjs-feather";
 import van from "vanjs-core";
+eruda.init();
 
 let leavingPage = false;
 
@@ -53,20 +54,19 @@ function initNavHoverEffects() {
       text.style.setProperty("opacity", "1", "important");
     } else {
       // Inactive/dimmed state: no animation, reduced opacity
-      container.style.animation = "none";
+      container.style.animation = "4s glower infinite";
       Object.assign(icon.style, { opacity: ".75", filter: "grayscale(50%)" });
       text.style.setProperty("opacity", "0.75", "important");
     }
   }
   
   // Check if nav item at index corresponds to current page
-function isCurrentNav(index) {
-  const icon = navIcons[index],
-        dataLink = icon.parentElement.dataset.link || "/",
-        // Normalize by removing leading slash from dataLink
-        normalizedLink = dataLink === "/" ? "home" : dataLink.replace(/^\//, "");
-  return normalizedLink === currentPath;
-}
+  function isCurrentNav(index) {
+    const icon = navIcons[index],
+          dataLink = icon.parentElement.dataset.link || "/",
+          normalizedLink = dataLink === "/" ? "home" : dataLink;
+    return normalizedLink === currentPath;
+  }
   
   // Reset all nav items to default state (active glows, others dimmed)
   function resetToDefault() {
@@ -108,23 +108,17 @@ function isCurrentNav(index) {
 
 
 function simulateLinkClick(url, target = "_self") {
-    // Ensure URL is absolute (starts with /)
-    if (!url.startsWith('/') && !url.startsWith('http')) {
-        url = '/' + url;
-    }
-    
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = target;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     leavingPage = true;
     initAnimations();
-    
-    // Add slight delay for animations to start
-    setTimeout(() => {
-        if (target === "_blank" || target === "_new") {
-            window.open(url, target);
-        } else {
-            window.location.href = url;
-        }
-    }, 50); // Adjust timing based on your animation duration
 }
+
 
 function updateNavIcons() {
   const currentPath = window.location.pathname.substring(1) || "home",
@@ -150,8 +144,7 @@ function updateNavIcons() {
     icon = navIcons[ndx];
     text = navText[ndx];
     dataLink = icon.parentElement.dataset.link || "/";
-    // Normalize by removing leading slash
-    normalizedLink = dataLink === "/" ? "home" : dataLink.replace(/^\//, "");
+    normalizedLink = dataLink === "/" ? "home" : dataLink;
     if (normalizedLink === currentPath) icon.parentElement.style.animation = "glow 4s ease-in-out infinite";
     else {
       Object.assign(icon.style, {opacity:".75", filter:"grayscale(50%)"});
@@ -176,12 +169,15 @@ function throttle(func, wait) {
 let scrollContainer = null,
     footer = null,
     footerStyle = null,
-    sections = [];
+    sections = [],
+    topNav = null,
+    lastScrollTop = 0,
+    navHidden = false;
 
 function initScrollHandler() {
   const containers = document.querySelectorAll("div.container");
   let itR8 = containers.length, style;
-  
+
   // Find the scrollable container
   for (;itR8;--itR8) {
     style = window.getComputedStyle(containers[itR8 - 1]);
@@ -190,30 +186,55 @@ function initScrollHandler() {
       break;
     }
   }
-  
+
   footer = document.querySelector("footer > div");
   if (footer) footerStyle = footer.style;
-  
+
+  topNav = document.querySelector("div.wrapper.topnav");
+
   if (!scrollContainer || !footer) return;
-  
-  // 1. Existing scroll and resize listeners
-  scrollContainer.addEventListener("scroll", throttle(checkOverlapAndScroll, 100));
+
+  scrollContainer.addEventListener("scroll", throttle(handleScroll, 100));
   window.addEventListener("resize", throttle(checkOverlapAndScroll, 200));
 
-  // 2. NEW: Watch for content changes (e.g. images loading, dynamic content)
-  const tabList = document.querySelector("div.wrapper.tab-list");
-  if (tabList) {
-    const resizeObserver = new ResizeObserver(throttle(() => {
-        checkOverlapAndScroll();
-    }, 100));
-    resizeObserver.observe(tabList);
-    
-    // Also observe children to catch specific element resizing
-    Array.from(tabList.children).forEach(child => resizeObserver.observe(child));
-  }
-  
-  // Initial check
+  // Initial check with slight delay to ensure layout is ready
   setTimeout(checkOverlapAndScroll, 100);
+}
+
+function handleScroll() {
+  checkOverlapAndScroll();
+  handleNavVisibility();
+}
+
+function handleNavVisibility() {
+  if (!scrollContainer || !topNav) return;
+
+  const scrollTop = scrollContainer.scrollTop;
+  const scrollHeight = scrollContainer.scrollHeight;
+  const clientHeight = scrollContainer.clientHeight;
+  const maxScroll = scrollHeight - clientHeight;
+  const scrollPercent = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0;
+
+  // Convert 3em to pixels (assuming base font size of 16px)
+  const hideThreshold = parseFloat(getComputedStyle(document.documentElement).fontSize) * 3;
+  const scrollingDown = scrollTop > lastScrollTop;
+
+  // Hide nav: scrolled down past 3em AND scrolling down
+  // Show nav: scrolling up OR at top 5% of page
+  const shouldHide = scrollTop > hideThreshold && scrollingDown && scrollPercent > 5;
+  const shouldShow = !scrollingDown || scrollPercent <= 5;
+
+  if (shouldHide && !navHidden) {
+    topNav.style.transform = "translateY(-100%)";
+    topNav.style.transition = "transform 0.3s ease-in-out";
+    navHidden = true;
+  } else if (shouldShow && navHidden) {
+    topNav.style.transform = "translateY(0)";
+    topNav.style.transition = "transform 0.3s ease-in-out";
+    navHidden = false;
+  }
+
+  lastScrollTop = scrollTop;
 }
 
 function checkOverlapAndScroll() {
@@ -227,24 +248,28 @@ function checkOverlapAndScroll() {
   
   const footerRect = footer.getBoundingClientRect();
   
-  // ROBUST FIX: Check all direct children instead of specific tags
-  const contentElements = tabList.children; 
+  // Get all child elements that have actual content
+  const contentElements = tabList.querySelectorAll("section, div, h1, h2, p, svg, hr");
   
+  // If no content, show footer
   if (contentElements.length === 0) {
     setFooterVisibility(true);
     return;
   }
   
+  // Find the actual bottom of content by checking all elements
   let actualContentBottom = 0;
   for (let i = 0; i < contentElements.length; i++) {
     const rect = contentElements[i].getBoundingClientRect();
-    // Check rect.bottom to find the lowest point
-    if (rect.bottom > actualContentBottom) {
+    if (rect.bottom > actualContentBottom && rect.height > 0) {
       actualContentBottom = rect.bottom;
     }
   }
   
+  // Check if content overlaps footer
   const hasOverlap = actualContentBottom > footerRect.top;
+  
+  // Hide footer if overlapping, show if not
   setFooterVisibility(!hasOverlap);
 }
 
@@ -271,20 +296,27 @@ function setFooterVisibility(visible) {
 function initSmoothScroll() {
   if (!scrollContainer) return;
   
-  // State variables
+  // Detect if device supports touch (mobile/tablet)
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  
+  // On mobile, use native scrolling entirely
+  if (isTouchDevice) {
+    scrollContainer.style.scrollBehavior = 'smooth';
+    return;
+  }
+  
+  // Desktop smooth scrolling
   let targetScroll = scrollContainer.scrollTop;
   let currentScroll = scrollContainer.scrollTop;
   let isAnimating = false;
   let animationId = null;
-  
-  // Flags to detect native override behaviors
   let useNativeScroll = false;
+  
+  // Detect middle-click auto-scroll
   let middleClickActive = false;
   
-  // 1. Handle Middle-Click (Auto-scroll)
-  // We must detect this to disable our interference while the user is auto-scrolling
   scrollContainer.addEventListener('mousedown', function(e) {
-    if (e.button === 1) { // Middle mouse button
+    if (e.button === 1) {
       middleClickActive = true;
       useNativeScroll = true;
     }
@@ -293,7 +325,7 @@ function initSmoothScroll() {
   document.addEventListener('mouseup', function(e) {
     if (e.button === 1) {
       middleClickActive = false;
-      // Re-sync positions after middle-click scroll ends
+      // Re-sync after middle-click ends
       setTimeout(() => {
         targetScroll = scrollContainer.scrollTop;
         currentScroll = scrollContainer.scrollTop;
@@ -302,51 +334,37 @@ function initSmoothScroll() {
     }
   });
   
-  // 2. The Main Wheel Listener
-  // We removed the "isTouchDevice" check. Now we only intercept if it's actually a mouse wheel event.
+  // Intercept wheel events for smooth scrolling
   scrollContainer.addEventListener('wheel', function(e) {
-    // Allow native behavior for:
-    // - Middle-click auto-scrolling
-    // - Shift+Wheel (Horizontal scrolling)
-    // - Ctrl+Wheel (Pinch to zoom)
-    if (middleClickActive || e.shiftKey || e.ctrlKey || useNativeScroll) {
+    // Don't interfere with middle-click scrolling or shift+wheel
+    if (middleClickActive || e.shiftKey || useNativeScroll) {
       return;
     }
     
-    // Prevent default browser scrolling so we can handle it
     e.preventDefault();
-    
-    // Calculate delta (0.25 is the speed factor - adjust as needed)
     targetScroll += e.deltaY * 0.25;
-    
-    // Clamp the target to the scroll bounds
     targetScroll = Math.max(0, Math.min(targetScroll, scrollContainer.scrollHeight - scrollContainer.clientHeight));
     
-    // Start animation loop if not already running
     if (!isAnimating) {
       isAnimating = true;
       animate();
     }
-  }, { passive: false }); // passive: false is required to use preventDefault()
+  }, { passive: false });
   
-  // 3. The Animation Loop
   function animate() {
-    // If user switched to native scrolling (middle click), stop animating custom physics
     if (useNativeScroll || middleClickActive) {
       isAnimating = false;
       return;
     }
     
     const diff = targetScroll - currentScroll;
-    const delta = Math.abs(diff);
     
-    // Stop animation when we are close enough (pixel perfect)
-    if (delta > 0.5) {
-      currentScroll += diff * 0.1; // Easing factor (0.1 = smooth, 0.5 = snappy)
+    if (Math.abs(diff) > 0.5) {
+      currentScroll += diff * 0.1;
       scrollContainer.scrollTop = currentScroll;
       animationId = requestAnimationFrame(animate);
     } else {
-      // Snap to exact target when finished to prevent micro-jitters
+      // Animation complete
       currentScroll = targetScroll;
       scrollContainer.scrollTop = currentScroll;
       isAnimating = false;

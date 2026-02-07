@@ -1,5 +1,21 @@
+/* Ensure home section content appears above background video */
+#home {
+  position: relative;
+  z-index: 1;
+}
+
+#home > *:not(.bg-video-wrap) {
+  position: relative;
+  z-index: 1;
+}
+
 .hbg-logo {
-  width:4em;
-  height:auto;
-  display:inline;
+  width: 4em;
+  height: auto;
+  display: inline;
+  filter: var(--shadow-drop);
+}
+
+div.wrapper.tab-list {
+  padding-bottom: 0;
 }
