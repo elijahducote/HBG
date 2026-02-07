@@ -41,9 +41,9 @@
       ["viewport", "width=device-width,initial-scale=1.0"],
       ["description", "Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area."],
       ["keywords", ""],
-      "/src/shared/pure.css",
       "https://js.hcaptcha.com/1/api.js?hl=en&recaptchacompat=on",
       "/src/shared/index.js",
+      "/src/shared/pure.css",
       "/src/shared/index.css",
       "/src/contact/main.css"
     ]

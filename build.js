@@ -133,7 +133,7 @@ async function processHTML(nav, pageName = null) {
     else tab = tab(tags);
 
     webDQment = html({lang:"en-US"},
-      await MetaData(tags, page, icons),
+      await MetaData(tags, page, icons?.cloneNode(true)),
       Body(tags, {
         //header: TopNav(tags),
         main: Interface(tags,tab,nomer),
