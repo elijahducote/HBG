@@ -112,10 +112,11 @@ function simulateLinkClick(url, target = "_self") {
     link.target = target;
     link.style.display = "none";
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
     leavingPage = true;
     initAnimations();
+    checkOverlapAndScroll();
+    link.click();
+    document.body.removeChild(link);
 }
 
 
