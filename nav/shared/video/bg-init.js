@@ -72,15 +72,18 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           streaming: {
             buffer: {
               fastSwitchEnabled: true,
-              stableBufferTime: isMobile ? 6 : 10,
-              bufferTimeAtTopQuality: isMobile ? 8 : 15,
-              bufferToKeep: isMobile ? 3 : 8,
-              bufferPruningInterval: 5
+              stableBufferTime: isMobile ? 3 : 10,
+              bufferTimeAtTopQuality: isMobile ? 5 : 15,
+              bufferToKeep: isMobile ? 2 : 8,
+              bufferPruningInterval: isMobile ? 3 : 5,
+              initialBufferLevel: isMobile ? 1 : undefined
             },
             abr: {
               autoSwitchBitrate: { video: true, audio: true },
-              limitBitrateByPortal: true
-            }
+              limitBitrateByPortal: true,
+              initialBitrate: isMobile ? { video: 600 } : undefined
+            },
+            lowLatencyEnabled: false
           }
         });
         streamPlayer.on(dashjs.MediaPlayer.events.ERROR, function() { fallbackToMP4(); });
@@ -94,15 +97,21 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       function initHLS() {
         streamType = 'hls';
         streamPlayer = new Hls({
-          maxBufferLength: isMobile ? 6 : 8,
-          maxMaxBufferLength: isMobile ? 10 : 15,
-          maxBufferSize: isMobile ? 10 * 1000000 : 20 * 1000000,
+          maxBufferLength: isMobile ? 3 : 8,
+          maxMaxBufferLength: isMobile ? 6 : 15,
+          maxBufferSize: isMobile ? 5 * 1000000 : 20 * 1000000,
           maxBufferHole: 0.5,
-          startLevel: -1,
+          startLevel: isMobile ? 0 : -1,
           autoStartLoad: true,
           enableWorker: true,
           lowLatencyMode: false,
-          backBufferLength: isMobile ? 5 : 10
+          backBufferLength: isMobile ? 3 : 10,
+          abrEwmaDefaultEstimate: isMobile ? 600000 : undefined,
+          abrEwmaFastVoD: isMobile ? 2 : 3,
+          abrEwmaSlowVoD: isMobile ? 6 : 9,
+          abrBandWidthUpFactor: isMobile ? 0.5 : 0.7,
+          fragLoadingTimeOut: isMobile ? 8000 : 20000,
+          progressive: isMobile
         });
         streamPlayer.loadSource(STREAM_CONFIG.hlsSource);
         streamPlayer.attachMedia(video);

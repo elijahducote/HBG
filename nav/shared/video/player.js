@@ -420,15 +420,19 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           streaming: {
             buffer: {
               fastSwitchEnabled: true,
-              stableBufferTime: isMobile ? 8 : 12,
-              bufferTimeAtTopQuality: isMobile ? 12 : 20,
-              bufferToKeep: isMobile ? 5 : 10,
-              bufferPruningInterval: 5
+              stableBufferTime: isMobile ? 4 : 12,
+              bufferTimeAtTopQuality: isMobile ? 6 : 20,
+              bufferToKeep: isMobile ? 3 : 10,
+              bufferPruningInterval: isMobile ? 3 : 5,
+              initialBufferLevel: isMobile ? 1 : undefined
             },
             abr: {
               autoSwitchBitrate: { video: true, audio: true },
-              limitBitrateByPortal: isMobile
-            }
+              limitBitrateByPortal: isMobile,
+              initialBitrate: isMobile ? { video: 800 } : undefined,
+              movingAverageMethod: 'ewma'
+            },
+            lowLatencyEnabled: false
           }
         });
 
@@ -453,25 +457,31 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         streamType = 'hls';
 
         streamPlayer = new Hls({
-          maxBufferLength: isMobile ? 8 : 10,
-          maxMaxBufferLength: isMobile ? 15 : 20,
-          maxBufferSize: isMobile ? 15 * 1000000 : 30 * 1000000,
+          maxBufferLength: isMobile ? 4 : 10,
+          maxMaxBufferLength: isMobile ? 8 : 20,
+          maxBufferSize: isMobile ? 8 * 1000000 : 30 * 1000000,
           maxBufferHole: 0.5,
-          startLevel: -1,
+          startLevel: isMobile ? 0 : -1,
           autoStartLoad: true,
           startPosition: -1,
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 3,
-          abrEwmaDefaultEstimate: 500000,
+          abrEwmaDefaultEstimate: isMobile ? 800000 : 500000,
+          abrEwmaFastLive: 3,
+          abrEwmaSlowLive: 9,
+          abrEwmaFastVoD: isMobile ? 2 : 3,
+          abrEwmaSlowVoD: isMobile ? 6 : 9,
           abrBandWidthFactor: 0.95,
-          abrBandWidthUpFactor: 0.7,
-          fragLoadingTimeOut: 20000,
+          abrBandWidthUpFactor: isMobile ? 0.5 : 0.7,
+          fragLoadingTimeOut: isMobile ? 10000 : 20000,
           fragLoadingMaxRetry: 6,
           fragLoadingRetryDelay: 1000,
           enableWorker: true,
           lowLatencyMode: false,
-          backBufferLength: isMobile ? 10 : 15
+          backBufferLength: isMobile ? 5 : 15,
+          testBandwidth: true,
+          progressive: isMobile
         });
 
         streamPlayer.loadSource(STREAM_CONFIG.hlsSource);
