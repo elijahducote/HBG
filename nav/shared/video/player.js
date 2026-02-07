@@ -14,7 +14,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       // ============================================
       // DOM Elements (with null guards)
       // ============================================
-      const video = document.querySelector('video');
+      const video = document.querySelector('.video-container video') || document.querySelector('video:not(.bg-video-wrap video)');
       if (!video) return; // Exit if no video element
       
       const playPauseBtn = document.querySelector('.play-pause-btn');
@@ -385,8 +385,12 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           }
         }
         
-        video.src = STREAM_CONFIG.mp4Fallback;
         streamType = 'mp4';
+        if (STREAM_CONFIG.mp4Fallback) {
+          video.src = STREAM_CONFIG.mp4Fallback;
+        } else {
+          console.warn('No streaming format available and no MP4 fallback configured');
+        }
       }
       
       async function checkFileExists(url) {
@@ -509,8 +513,12 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           streamType === 'hls' ? streamPlayer.destroy() : streamPlayer.reset();
           streamPlayer = null;
         }
-        video.src = STREAM_CONFIG.mp4Fallback;
         streamType = 'mp4';
+        if (STREAM_CONFIG.mp4Fallback) {
+          video.src = STREAM_CONFIG.mp4Fallback;
+        } else {
+          console.warn('Streaming failed and no MP4 fallback configured');
+        }
       }
       
       // ============================================

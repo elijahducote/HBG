@@ -130,8 +130,10 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           streamType === 'hls' ? streamPlayer.destroy() : streamPlayer.reset();
           streamPlayer = null;
         }
-        if (STREAM_CONFIG.mp4Fallback) video.src = STREAM_CONFIG.mp4Fallback;
         streamType = 'mp4';
+        if (STREAM_CONFIG.mp4Fallback) {
+          video.src = STREAM_CONFIG.mp4Fallback;
+        }
       }
 
       async function initStream() {
@@ -146,8 +148,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         if (STREAM_CONFIG.hlsEnabled && features.nativeHls) {
           if (await checkFileExists(STREAM_CONFIG.hlsSource)) { initNativeHLS(); return; }
         }
-        if (STREAM_CONFIG.mp4Fallback) video.src = STREAM_CONFIG.mp4Fallback;
         streamType = 'mp4';
+        if (STREAM_CONFIG.mp4Fallback) video.src = STREAM_CONFIG.mp4Fallback;
       }
 
       // ---- Autoplay ----
