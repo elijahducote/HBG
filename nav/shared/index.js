@@ -1,7 +1,6 @@
 import {paths as sectionIds} from "../../sitemap.json";
 import {Loader} from "vanjs-feather";
 import van from "vanjs-core";
-eruda.init();
 
 let leavingPage = false;
 
