@@ -431,8 +431,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
               limitBitrateByPortal: isMobile,
               initialBitrate: isMobile ? { video: 800 } : undefined,
               movingAverageMethod: 'ewma'
-            },
-            lowLatencyEnabled: false
+            }
           }
         });
 

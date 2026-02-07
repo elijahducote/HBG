@@ -82,8 +82,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
               autoSwitchBitrate: { video: true, audio: true },
               limitBitrateByPortal: true,
               initialBitrate: isMobile ? { video: 600 } : undefined
-            },
-            lowLatencyEnabled: false
+            }
           }
         });
         streamPlayer.on(dashjs.MediaPlayer.events.ERROR, function() { fallbackToMP4(); });
