@@ -47,8 +47,18 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
                     (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const isAndroid = /Android/i.test(ua);
       const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
-      const isChrome = /Chrome/i.test(ua) && !/Edge|Edg/i.test(ua);
+      const isChrome = /Chrome/i.test(ua) && !/Edge|Edg|OPR|YaBrowser|SamsungBrowser/i.test(ua);
       const isFirefox = /Firefox/i.test(ua);
+
+      // Mobile browser variants (Yandex, Opera, Samsung, UC, etc.)
+      const isYandex = /YaBrowser/i.test(ua);
+      const isOperaMobile = /OPR|Opera Mini|Opera Mobi/i.test(ua);
+      const isSamsungBrowser = /SamsungBrowser/i.test(ua);
+      const isUCBrowser = /UCBrowser|UCWEB/i.test(ua);
+      const isMiBrowser = /MiuiBrowser/i.test(ua);
+
+      // These browsers often have quirks with MSE/HLS.js
+      const isQuirkyMobileBrowser = isYandex || isOperaMobile || isUCBrowser || isMiBrowser;
 
       const isMobile = isIOS || isAndroid ||
                        /webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
@@ -60,6 +70,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         if (memory && memory <= 2) return true;
         if (cores && cores <= 2) return true;
         if (isAndroid && /Android [4-6]/i.test(ua)) return true;
+        // UC Browser and Mi Browser often run on low-end devices
+        if (isUCBrowser || isMiBrowser) return true;
         return false;
       })();
 
@@ -387,45 +399,38 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       // ============================================
       // Stream Initialization
       // ============================================
-      async function initStream() {
+      function initStream() {
         const format = STREAM_CONFIG.preferredFormat;
 
         // iOS/Safari: Always prefer native HLS - better performance and battery
         if (STREAM_CONFIG.hlsEnabled && features.nativeHls && (isIOS || (isSafari && !features.hls))) {
-          const hlsAvailable = await checkFileExists(STREAM_CONFIG.hlsSource);
-          if (hlsAvailable) {
-            initNativeHLS();
-            return;
-          }
+          tryLoadSource(initNativeHLS, initStreamFallback);
+          return;
         }
 
         // Non-Apple: prefer DASH for better ABR control
         if (STREAM_CONFIG.dashEnabled && (format === 'dash' || format === 'auto') && features.dash && !isAppleDevice()) {
-          const dashAvailable = await checkFileExists(STREAM_CONFIG.dashSource);
-          if (dashAvailable) {
-            initDASH();
-            return;
-          }
+          tryLoadSource(initDASH, initStreamFallback);
+          return;
         }
 
-        // HLS.js for browsers without native HLS (Chrome, Firefox on desktop)
+        // HLS.js for browsers without native HLS (Chrome, Firefox, Yandex, Opera on Android)
         if (STREAM_CONFIG.hlsEnabled && (format === 'hls' || format === 'auto') && features.hls) {
-          const hlsAvailable = await checkFileExists(STREAM_CONFIG.hlsSource);
-          if (hlsAvailable) {
-            initHLS();
-            return;
-          }
+          tryLoadSource(initHLS, initStreamFallback);
+          return;
         }
 
         // Fallback: native HLS for any remaining browsers that support it
         if (STREAM_CONFIG.hlsEnabled && features.nativeHls) {
-          const hlsAvailable = await checkFileExists(STREAM_CONFIG.hlsSource);
-          if (hlsAvailable) {
-            initNativeHLS();
-            return;
-          }
+          tryLoadSource(initNativeHLS, initStreamFallback);
+          return;
         }
 
+        // Final fallback to MP4
+        initStreamFallback();
+      }
+
+      function initStreamFallback() {
         streamType = 'mp4';
         if (STREAM_CONFIG.mp4Fallback) {
           video.src = STREAM_CONFIG.mp4Fallback;
@@ -434,11 +439,14 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         }
       }
       
-      async function checkFileExists(url) {
+      // Optimistic load - try source directly, handle errors via player events
+      // Avoids blocking HEAD requests that delay mobile playback
+      function tryLoadSource(initFn, fallbackFn) {
         try {
-          const response = await fetch(url, { method: 'HEAD' });
-          return response.ok;
-        } catch {
+          initFn();
+          return true;
+        } catch (e) {
+          if (fallbackFn) fallbackFn();
           return false;
         }
       }
@@ -481,10 +489,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
               initialBitrate: initialBitrate ? { video: initialBitrate } : undefined,
               movingAverageMethod: 'ewma',
               bandwidthSafetyFactor: abrConfig.bandwidthFactor,
-              // Prevent aggressive upswitch that causes stalls
               ABRStrategy: 'abrThroughput'
             },
-            // Retry and timeout settings
             retryAttempts: {
               MPD: 3,
               MediaSegment: 3,
@@ -494,26 +500,6 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
               MPD: 500,
               MediaSegment: 1000,
               InitializationSegment: 1000
-            }
-          },
-          // Catch dropped frames for quality adjustment
-          streaming: {
-            buffer: {
-              fastSwitchEnabled: !isLowEndDevice,
-              stableBufferTime: dashBuffer.stableBufferTime,
-              bufferTimeAtTopQuality: dashBuffer.bufferTimeAtTopQuality,
-              bufferToKeep: dashBuffer.bufferToKeep,
-              bufferPruningInterval: dashBuffer.bufferPruningInterval,
-              initialBufferLevel: dashBuffer.initialBufferLevel
-            },
-            abr: {
-              autoSwitchBitrate: { video: true, audio: true },
-              limitBitrateByPortal: isMobile,
-              usePixelRatioInLimitBitrateByPortal: true,
-              initialBitrate: initialBitrate ? { video: initialBitrate } : undefined,
-              movingAverageMethod: 'ewma',
-              bandwidthSafetyFactor: abrConfig.bandwidthFactor,
-              ABRStrategy: 'abrThroughput'
             }
           }
         });
@@ -639,53 +625,56 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         var bufferConfig = getBufferConfig();
         var abrConfig = getAbrConfig();
 
+        // Quirky browsers need more conservative settings
+        var needsConservativeSettings = isQuirkyMobileBrowser || isLowEndDevice || isSlowConnection;
+
         streamPlayer = new Hls({
           // Buffer settings - tuned per device capability
-          maxBufferLength: bufferConfig.maxBufferLength,
-          maxMaxBufferLength: bufferConfig.maxMaxBufferLength,
-          maxBufferSize: bufferConfig.maxBufferSize,
-          maxBufferHole: 0.5,
-          backBufferLength: bufferConfig.backBufferLength,
+          maxBufferLength: needsConservativeSettings ? Math.min(bufferConfig.maxBufferLength, 4) : bufferConfig.maxBufferLength,
+          maxMaxBufferLength: needsConservativeSettings ? Math.min(bufferConfig.maxMaxBufferLength, 8) : bufferConfig.maxMaxBufferLength,
+          maxBufferSize: needsConservativeSettings ? Math.min(bufferConfig.maxBufferSize, 6 * 1000000) : bufferConfig.maxBufferSize,
+          maxBufferHole: needsConservativeSettings ? 1 : 0.5,
+          backBufferLength: needsConservativeSettings ? Math.min(bufferConfig.backBufferLength, 5) : bufferConfig.backBufferLength,
 
-          // Start behavior
-          startLevel: abrConfig.startLevel,
+          // Start behavior - quirky browsers start at lowest quality
+          startLevel: needsConservativeSettings ? 0 : abrConfig.startLevel,
           autoStartLoad: true,
           startPosition: -1,
 
-          // ABR tuning - critical for smooth playback
-          abrEwmaDefaultEstimate: abrConfig.defaultEstimate,
+          // ABR tuning - more conservative for quirky browsers
+          abrEwmaDefaultEstimate: needsConservativeSettings ? 500000 : abrConfig.defaultEstimate,
           abrEwmaFastLive: 3,
           abrEwmaSlowLive: 9,
-          abrEwmaFastVoD: abrConfig.ewmaFast,
-          abrEwmaSlowVoD: abrConfig.ewmaSlow,
-          abrBandWidthFactor: abrConfig.bandwidthFactor,
-          abrBandWidthUpFactor: abrConfig.bandwidthUpFactor,
+          abrEwmaFastVoD: needsConservativeSettings ? 2 : abrConfig.ewmaFast,
+          abrEwmaSlowVoD: needsConservativeSettings ? 6 : abrConfig.ewmaSlow,
+          abrBandWidthFactor: needsConservativeSettings ? 0.7 : abrConfig.bandwidthFactor,
+          abrBandWidthUpFactor: needsConservativeSettings ? 0.4 : abrConfig.bandwidthUpFactor,
 
-          // Stall recovery
-          highBufferWatchdogPeriod: 2,
+          // Stall recovery - more aggressive for quirky browsers
+          highBufferWatchdogPeriod: needsConservativeSettings ? 1 : 2,
           nudgeOffset: 0.1,
-          nudgeMaxRetry: 5,
+          nudgeMaxRetry: needsConservativeSettings ? 8 : 5,
 
-          // Loading settings
-          fragLoadingTimeOut: isLowEndDevice || isSlowConnection ? 15000 : 20000,
-          fragLoadingMaxRetry: 6,
+          // Loading settings - longer timeouts for quirky browsers
+          fragLoadingTimeOut: needsConservativeSettings ? 20000 : 20000,
+          fragLoadingMaxRetry: needsConservativeSettings ? 8 : 6,
           fragLoadingRetryDelay: 1000,
-          manifestLoadingTimeOut: 10000,
-          manifestLoadingMaxRetry: 4,
-          levelLoadingTimeOut: 10000,
-          levelLoadingMaxRetry: 4,
+          manifestLoadingTimeOut: needsConservativeSettings ? 15000 : 10000,
+          manifestLoadingMaxRetry: needsConservativeSettings ? 6 : 4,
+          levelLoadingTimeOut: needsConservativeSettings ? 15000 : 10000,
+          levelLoadingMaxRetry: needsConservativeSettings ? 6 : 4,
 
-          // Performance
-          enableWorker: !isLowEndDevice,
+          // Performance - disable worker on quirky browsers (often causes issues)
+          enableWorker: !needsConservativeSettings && !isQuirkyMobileBrowser,
           lowLatencyMode: false,
-          progressive: isMobile || isSlowConnection,
-          testBandwidth: true,
+          progressive: isMobile || isSlowConnection || isQuirkyMobileBrowser,
+          testBandwidth: !isQuirkyMobileBrowser,
 
-          //Cappping for constrained devices
+          // Capping for constrained devices
           capLevelToPlayerSize: isMobile,
           capLevelOnFPSDrop: true,
           fpsDroppedMonitoringPeriod: 5000,
-          fpsDroppedMonitoringThreshold: 0.2
+          fpsDroppedMonitoringThreshold: needsConservativeSettings ? 0.1 : 0.2
         });
 
         streamPlayer.loadSource(STREAM_CONFIG.hlsSource);
@@ -698,11 +687,30 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           updateActiveQualityUI();
         });
 
+        var hlsRecoveryAttempts = 0;
+        var maxHlsRecoveryAttempts = isQuirkyMobileBrowser ? 5 : 3;
+
         streamPlayer.on(Hls.Events.ERROR, function(_event, data) {
           if (data.fatal) {
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) streamPlayer.startLoad();
-            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) streamPlayer.recoverMediaError();
-            else fallbackToMP4();
+            hlsRecoveryAttempts++;
+
+            if (hlsRecoveryAttempts > maxHlsRecoveryAttempts) {
+              fallbackToMP4();
+              return;
+            }
+
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              // Network error - try restarting load
+              streamPlayer.startLoad();
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+              // Media error - try recovery sequence
+              streamPlayer.recoverMediaError();
+            } else {
+              fallbackToMP4();
+            }
+          } else if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+            // Non-fatal stall - drop quality if possible
+            handleBufferStall();
           }
         });
 
@@ -1095,6 +1103,26 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
 
+        // Critical path: start stream loading immediately
+        initStream();
+
+        // Mark auto as active initially without triggering a switch
+        currentQuality = 'auto';
+        qualityOptions.forEach(function(opt) {
+          opt.classList.toggle('active', opt.dataset.quality === 'auto');
+        });
+
+        if (playPauseBtn) playPauseBtn.setAttribute('data-tooltip', 'Play (k)');
+
+        // Defer non-critical initialization to reduce initial load time
+        if (typeof requestIdleCallback === 'function') {
+          requestIdleCallback(initDeferred, { timeout: 2000 });
+        } else {
+          setTimeout(initDeferred, 100);
+        }
+      }
+
+      function initDeferred() {
         if (!features.pictureInPicture && miniPlayerBtn) {
           miniPlayerBtn.classList.add('hidden');
           miniPlayerBtn.disabled = true;
@@ -1106,15 +1134,6 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
         initCaptions();
         initThumbnails();
-        initStream();
-
-        // Mark auto as active initially without triggering a switch
-        currentQuality = 'auto';
-        qualityOptions.forEach(function(opt) {
-          opt.classList.toggle('active', opt.dataset.quality === 'auto');
-        });
-
-        if (playPauseBtn) playPauseBtn.setAttribute('data-tooltip', 'Play (k)');
       }
       
       // ============================================
