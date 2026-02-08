@@ -17,8 +17,38 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       var video = document.querySelector('.bg-video-wrap video');
       if (!video) return;
 
-      var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                     (navigator.maxTouchPoints > 1);
+      var ua = navigator.userAgent;
+      var platform = navigator.platform || '';
+
+      // Platform detection
+      var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+                  (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var isAndroid = /Android/i.test(ua);
+      var isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+
+      // Quirky mobile browsers
+      var isYandex = /YaBrowser/i.test(ua);
+      var isOperaMobile = /OPR|Opera Mini|Opera Mobi/i.test(ua);
+      var isUCBrowser = /UCBrowser|UCWEB/i.test(ua);
+      var isMiBrowser = /MiuiBrowser/i.test(ua);
+      var isQuirkyMobileBrowser = isYandex || isOperaMobile || isUCBrowser || isMiBrowser;
+
+      var isMobile = isIOS || isAndroid ||
+                     /webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+                     (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+
+      // Low-end device detection
+      var isLowEndDevice = (function() {
+        var memory = navigator.deviceMemory;
+        var cores = navigator.hardwareConcurrency;
+        if (memory && memory <= 2) return true;
+        if (cores && cores <= 2) return true;
+        if (isAndroid && /Android [4-6]/i.test(ua)) return true;
+        if (isUCBrowser || isMiBrowser) return true;
+        return false;
+      })();
+
+      var needsConservativeSettings = isQuirkyMobileBrowser || isLowEndDevice;
 
       // ---- Streaming config (same sources as watch player) ----
       var STREAM_CONFIG = {
@@ -59,9 +89,15 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       }
 
-      async function checkFileExists(url) {
-        try { var r = await fetch(url, { method: 'HEAD' }); return r.ok; }
-        catch { return false; }
+      // Optimistic load - try source directly, handle errors via player events
+      function tryLoadSource(initFn, fallbackFn) {
+        try {
+          initFn();
+          return true;
+        } catch (e) {
+          if (fallbackFn) fallbackFn();
+          return false;
+        }
       }
 
       function initDASH() {
@@ -95,27 +131,44 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
       function initHLS() {
         streamType = 'hls';
+
+        // Background video: prioritize stability over quality
+        var useConservative = needsConservativeSettings || isMobile;
+
         streamPlayer = new Hls({
-          maxBufferLength: isMobile ? 3 : 8,
-          maxMaxBufferLength: isMobile ? 6 : 15,
-          maxBufferSize: isMobile ? 5 * 1000000 : 20 * 1000000,
-          maxBufferHole: 0.5,
-          startLevel: isMobile ? 0 : -1,
+          maxBufferLength: useConservative ? 3 : 8,
+          maxMaxBufferLength: useConservative ? 6 : 15,
+          maxBufferSize: useConservative ? 4 * 1000000 : 20 * 1000000,
+          maxBufferHole: useConservative ? 1 : 0.5,
+          startLevel: useConservative ? 0 : -1,
           autoStartLoad: true,
-          enableWorker: true,
+          // Disable worker on low-end/quirky devices - causes issues
+          enableWorker: !needsConservativeSettings,
           lowLatencyMode: false,
-          backBufferLength: isMobile ? 3 : 10,
-          abrEwmaDefaultEstimate: isMobile ? 600000 : undefined,
-          abrEwmaFastVoD: isMobile ? 2 : 3,
-          abrEwmaSlowVoD: isMobile ? 6 : 9,
-          abrBandWidthUpFactor: isMobile ? 0.5 : 0.7,
-          fragLoadingTimeOut: isMobile ? 8000 : 20000,
-          progressive: isMobile
+          backBufferLength: useConservative ? 2 : 10,
+          abrEwmaDefaultEstimate: useConservative ? 400000 : 800000,
+          abrEwmaFastVoD: useConservative ? 2 : 3,
+          abrEwmaSlowVoD: useConservative ? 6 : 9,
+          abrBandWidthFactor: useConservative ? 0.7 : 0.9,
+          abrBandWidthUpFactor: useConservative ? 0.3 : 0.6,
+          fragLoadingTimeOut: useConservative ? 15000 : 20000,
+          fragLoadingMaxRetry: useConservative ? 8 : 6,
+          manifestLoadingTimeOut: useConservative ? 15000 : 10000,
+          progressive: isMobile || isQuirkyMobileBrowser,
+          // Cap quality on mobile to save bandwidth/battery
+          capLevelToPlayerSize: isMobile
         });
         streamPlayer.loadSource(STREAM_CONFIG.hlsSource);
         streamPlayer.attachMedia(video);
+
+        var hlsRecoveryAttempts = 0;
         streamPlayer.on(Hls.Events.ERROR, function(_event, data) {
           if (data.fatal) {
+            hlsRecoveryAttempts++;
+            if (hlsRecoveryAttempts > 5) {
+              fallbackToMP4();
+              return;
+            }
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) streamPlayer.startLoad();
             else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) streamPlayer.recoverMediaError();
             else fallbackToMP4();
@@ -144,18 +197,37 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         }
       }
 
-      async function initStream() {
+      function initStream() {
         var fmt = STREAM_CONFIG.preferredFormat;
 
+        // iOS/Safari: Always use native HLS - better battery and performance for background
+        if (STREAM_CONFIG.hlsEnabled && features.nativeHls && (isIOS || isSafari)) {
+          tryLoadSource(initNativeHLS, initStreamFallback);
+          return;
+        }
+
+        // Non-Apple: prefer DASH
         if (STREAM_CONFIG.dashEnabled && (fmt === 'dash' || fmt === 'auto') && features.dash && !isAppleDevice()) {
-          if (await checkFileExists(STREAM_CONFIG.dashSource)) { initDASH(); return; }
+          tryLoadSource(initDASH, initStreamFallback);
+          return;
         }
+
+        // HLS.js for other browsers
         if (STREAM_CONFIG.hlsEnabled && (fmt === 'hls' || fmt === 'auto') && features.hls) {
-          if (await checkFileExists(STREAM_CONFIG.hlsSource)) { initHLS(); return; }
+          tryLoadSource(initHLS, initStreamFallback);
+          return;
         }
+
+        // Fallback to native HLS if available
         if (STREAM_CONFIG.hlsEnabled && features.nativeHls) {
-          if (await checkFileExists(STREAM_CONFIG.hlsSource)) { initNativeHLS(); return; }
+          tryLoadSource(initNativeHLS, initStreamFallback);
+          return;
         }
+
+        initStreamFallback();
+      }
+
+      function initStreamFallback() {
         streamType = 'mp4';
         if (STREAM_CONFIG.mp4Fallback) video.src = STREAM_CONFIG.mp4Fallback;
       }
@@ -176,19 +248,36 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         tryAutoplay();
       });
 
-      // ---- Recovery: handle pause, stall, and visibility changes ----
-      // Resume if video gets paused unexpectedly
+      // ---- Recovery: handle stall and visibility changes ----
+      // Note: Don't aggressively resume on pause - can fight with browser power saving
+      var pauseRecoveryTimeout = null;
+      var isPowerSaving = false;
+
       video.addEventListener('pause', function() {
-        // Small delay to avoid fighting with intentional pauses
-        setTimeout(tryAutoplay, 100);
+        // Only try to resume if tab is visible and we're not in power saving mode
+        if (document.hidden || isPowerSaving) return;
+
+        clearTimeout(pauseRecoveryTimeout);
+        pauseRecoveryTimeout = setTimeout(function() {
+          // Check if still paused and tab still visible
+          if (video.paused && !document.hidden && !isPowerSaving) {
+            tryAutoplay();
+          }
+        }, 500);
       });
 
-      // Resume if video stalls
-      video.addEventListener('stalled', tryAutoplay);
+      // Resume if video stalls (but not too aggressively)
+      var stallRecoveryTimeout = null;
+      video.addEventListener('stalled', function() {
+        clearTimeout(stallRecoveryTimeout);
+        stallRecoveryTimeout = setTimeout(tryAutoplay, 1000);
+      });
+
       video.addEventListener('waiting', function() {
         // If waiting too long, try to recover
-        setTimeout(function() {
-          if (video.paused || video.readyState < 3) {
+        clearTimeout(stallRecoveryTimeout);
+        stallRecoveryTimeout = setTimeout(function() {
+          if ((video.paused || video.readyState < 3) && !document.hidden) {
             tryAutoplay();
           }
         }, 3000);
@@ -197,7 +286,14 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       // Resume when tab becomes visible again
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          tryAutoplay();
+          isPowerSaving = false;
+          // Delay slightly to let browser restore resources
+          setTimeout(tryAutoplay, 200);
+        } else {
+          // Tab hidden - don't fight to resume
+          isPowerSaving = true;
+          clearTimeout(pauseRecoveryTimeout);
+          clearTimeout(stallRecoveryTimeout);
         }
       });
 
