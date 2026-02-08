@@ -37,10 +37,39 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const qualityOptions = document.querySelectorAll('.quality-option');
       
       // ============================================
-      // Mobile Detection & Performance Utilities
+      // Platform Detection & Performance Utilities
       // ============================================
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                       (navigator.maxTouchPoints > 1);
+      const ua = navigator.userAgent;
+      const platform = navigator.platform || '';
+
+      // Detailed platform detection
+      const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+                    (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/i.test(ua);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+      const isChrome = /Chrome/i.test(ua) && !/Edge|Edg/i.test(ua);
+      const isFirefox = /Firefox/i.test(ua);
+
+      const isMobile = isIOS || isAndroid ||
+                       /webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+                       (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+
+      const isLowEndDevice = (function() {
+        const memory = navigator.deviceMemory;
+        const cores = navigator.hardwareConcurrency;
+        if (memory && memory <= 2) return true;
+        if (cores && cores <= 2) return true;
+        if (isAndroid && /Android [4-6]/i.test(ua)) return true;
+        return false;
+      })();
+
+      // Network quality detection
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const isSlowConnection = connection && (
+        connection.effectiveType === 'slow-2g' ||
+        connection.effectiveType === '2g' ||
+        connection.saveData === true
+      );
       
       // RAF-batched updates to prevent layout thrashing
       let rafId = null;
@@ -360,7 +389,17 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       // ============================================
       async function initStream() {
         const format = STREAM_CONFIG.preferredFormat;
-        
+
+        // iOS/Safari: Always prefer native HLS - better performance and battery
+        if (STREAM_CONFIG.hlsEnabled && features.nativeHls && (isIOS || (isSafari && !features.hls))) {
+          const hlsAvailable = await checkFileExists(STREAM_CONFIG.hlsSource);
+          if (hlsAvailable) {
+            initNativeHLS();
+            return;
+          }
+        }
+
+        // Non-Apple: prefer DASH for better ABR control
         if (STREAM_CONFIG.dashEnabled && (format === 'dash' || format === 'auto') && features.dash && !isAppleDevice()) {
           const dashAvailable = await checkFileExists(STREAM_CONFIG.dashSource);
           if (dashAvailable) {
@@ -368,7 +407,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             return;
           }
         }
-        
+
+        // HLS.js for browsers without native HLS (Chrome, Firefox on desktop)
         if (STREAM_CONFIG.hlsEnabled && (format === 'hls' || format === 'auto') && features.hls) {
           const hlsAvailable = await checkFileExists(STREAM_CONFIG.hlsSource);
           if (hlsAvailable) {
@@ -376,7 +416,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             return;
           }
         }
-        
+
+        // Fallback: native HLS for any remaining browsers that support it
         if (STREAM_CONFIG.hlsEnabled && features.nativeHls) {
           const hlsAvailable = await checkFileExists(STREAM_CONFIG.hlsSource);
           if (hlsAvailable) {
@@ -384,7 +425,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             return;
           }
         }
-        
+
         streamType = 'mp4';
         if (STREAM_CONFIG.mp4Fallback) {
           video.src = STREAM_CONFIG.mp4Fallback;
@@ -416,21 +457,63 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         streamPlayer = dashjs.MediaPlayer().create();
         streamPlayer.initialize(video, STREAM_CONFIG.dashSource, false);
 
+        var dashBuffer = getDashBufferConfig();
+        var abrConfig = getAbrConfig();
+
+        // Initial bitrate based on device/network
+        var initialBitrate = isLowEndDevice || isSlowConnection ? 400 :
+                             isMobile ? 800 : undefined;
+
         streamPlayer.updateSettings({
           streaming: {
             buffer: {
-              fastSwitchEnabled: true,
-              stableBufferTime: isMobile ? 4 : 12,
-              bufferTimeAtTopQuality: isMobile ? 6 : 20,
-              bufferToKeep: isMobile ? 3 : 10,
-              bufferPruningInterval: isMobile ? 3 : 5,
-              initialBufferLevel: isMobile ? 1 : undefined
+              fastSwitchEnabled: !isLowEndDevice,
+              stableBufferTime: dashBuffer.stableBufferTime,
+              bufferTimeAtTopQuality: dashBuffer.bufferTimeAtTopQuality,
+              bufferToKeep: dashBuffer.bufferToKeep,
+              bufferPruningInterval: dashBuffer.bufferPruningInterval,
+              initialBufferLevel: dashBuffer.initialBufferLevel
             },
             abr: {
               autoSwitchBitrate: { video: true, audio: true },
               limitBitrateByPortal: isMobile,
-              initialBitrate: isMobile ? { video: 800 } : undefined,
-              movingAverageMethod: 'ewma'
+              usePixelRatioInLimitBitrateByPortal: true,
+              initialBitrate: initialBitrate ? { video: initialBitrate } : undefined,
+              movingAverageMethod: 'ewma',
+              bandwidthSafetyFactor: abrConfig.bandwidthFactor,
+              // Prevent aggressive upswitch that causes stalls
+              ABRStrategy: 'abrThroughput'
+            },
+            // Retry and timeout settings
+            retryAttempts: {
+              MPD: 3,
+              MediaSegment: 3,
+              InitializationSegment: 3
+            },
+            retryIntervals: {
+              MPD: 500,
+              MediaSegment: 1000,
+              InitializationSegment: 1000
+            }
+          },
+          // Catch dropped frames for quality adjustment
+          streaming: {
+            buffer: {
+              fastSwitchEnabled: !isLowEndDevice,
+              stableBufferTime: dashBuffer.stableBufferTime,
+              bufferTimeAtTopQuality: dashBuffer.bufferTimeAtTopQuality,
+              bufferToKeep: dashBuffer.bufferToKeep,
+              bufferPruningInterval: dashBuffer.bufferPruningInterval,
+              initialBufferLevel: dashBuffer.initialBufferLevel
+            },
+            abr: {
+              autoSwitchBitrate: { video: true, audio: true },
+              limitBitrateByPortal: isMobile,
+              usePixelRatioInLimitBitrateByPortal: true,
+              initialBitrate: initialBitrate ? { video: initialBitrate } : undefined,
+              movingAverageMethod: 'ewma',
+              bandwidthSafetyFactor: abrConfig.bandwidthFactor,
+              ABRStrategy: 'abrThroughput'
             }
           }
         });
@@ -443,44 +526,166 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           updateActiveQualityUI();
         });
 
+        // Stall recovery
+        streamPlayer.on(dashjs.MediaPlayer.events.BUFFER_EMPTY, handleBufferStall);
+
         streamPlayer.on(dashjs.MediaPlayer.events.ERROR, function(e) {
           console.error('DASH error:', e.error);
+          if (e.error && e.error.code && e.error.code < 100) {
+            // Non-fatal, attempt recovery
+            return;
+          }
           fallbackToMP4();
         });
       }
       
+      // ============================================
+      // Adaptive Configuration Helpers
+      // ============================================
+      function getBufferConfig() {
+        if (isLowEndDevice || isSlowConnection) {
+          return {
+            maxBufferLength: 3,
+            maxMaxBufferLength: 6,
+            maxBufferSize: 4 * 1000000,
+            backBufferLength: 3
+          };
+        }
+        if (isMobile) {
+          return {
+            maxBufferLength: 6,
+            maxMaxBufferLength: 12,
+            maxBufferSize: 12 * 1000000,
+            backBufferLength: 8
+          };
+        }
+        // Desktop
+        return {
+          maxBufferLength: 15,
+          maxMaxBufferLength: 30,
+          maxBufferSize: 40 * 1000000,
+          backBufferLength: 20
+        };
+      }
+
+      function getAbrConfig() {
+        if (isLowEndDevice || isSlowConnection) {
+          return {
+            startLevel: 0,
+            defaultEstimate: 500000,
+            ewmaFast: 2,
+            ewmaSlow: 6,
+            bandwidthFactor: 0.8,
+            bandwidthUpFactor: 0.4
+          };
+        }
+        if (isMobile) {
+          return {
+            startLevel: -1,
+            defaultEstimate: 1000000,
+            ewmaFast: 3,
+            ewmaSlow: 9,
+            bandwidthFactor: 0.9,
+            bandwidthUpFactor: 0.6
+          };
+        }
+        // Desktop
+        return {
+          startLevel: -1,
+          defaultEstimate: 2000000,
+          ewmaFast: 3,
+          ewmaSlow: 9,
+          bandwidthFactor: 0.95,
+          bandwidthUpFactor: 0.8
+        };
+      }
+
+      function getDashBufferConfig() {
+        if (isLowEndDevice || isSlowConnection) {
+          return {
+            stableBufferTime: 3,
+            bufferTimeAtTopQuality: 4,
+            bufferToKeep: 2,
+            bufferPruningInterval: 2,
+            initialBufferLevel: 0.5
+          };
+        }
+        if (isMobile) {
+          return {
+            stableBufferTime: 6,
+            bufferTimeAtTopQuality: 10,
+            bufferToKeep: 5,
+            bufferPruningInterval: 3,
+            initialBufferLevel: 1
+          };
+        }
+        // Desktop
+        return {
+          stableBufferTime: 15,
+          bufferTimeAtTopQuality: 25,
+          bufferToKeep: 12,
+          bufferPruningInterval: 5,
+          initialBufferLevel: undefined
+        };
+      }
+
       // ============================================
       // HLS
       // ============================================
       function initHLS() {
         streamType = 'hls';
 
+        // Adaptive config based on device/network capabilities
+        var bufferConfig = getBufferConfig();
+        var abrConfig = getAbrConfig();
+
         streamPlayer = new Hls({
-          maxBufferLength: isMobile ? 4 : 10,
-          maxMaxBufferLength: isMobile ? 8 : 20,
-          maxBufferSize: isMobile ? 8 * 1000000 : 30 * 1000000,
+          // Buffer settings - tuned per device capability
+          maxBufferLength: bufferConfig.maxBufferLength,
+          maxMaxBufferLength: bufferConfig.maxMaxBufferLength,
+          maxBufferSize: bufferConfig.maxBufferSize,
           maxBufferHole: 0.5,
-          startLevel: isMobile ? 0 : -1,
+          backBufferLength: bufferConfig.backBufferLength,
+
+          // Start behavior
+          startLevel: abrConfig.startLevel,
           autoStartLoad: true,
           startPosition: -1,
-          highBufferWatchdogPeriod: 2,
-          nudgeOffset: 0.1,
-          nudgeMaxRetry: 3,
-          abrEwmaDefaultEstimate: isMobile ? 800000 : 500000,
+
+          // ABR tuning - critical for smooth playback
+          abrEwmaDefaultEstimate: abrConfig.defaultEstimate,
           abrEwmaFastLive: 3,
           abrEwmaSlowLive: 9,
-          abrEwmaFastVoD: isMobile ? 2 : 3,
-          abrEwmaSlowVoD: isMobile ? 6 : 9,
-          abrBandWidthFactor: 0.95,
-          abrBandWidthUpFactor: isMobile ? 0.5 : 0.7,
-          fragLoadingTimeOut: isMobile ? 10000 : 20000,
+          abrEwmaFastVoD: abrConfig.ewmaFast,
+          abrEwmaSlowVoD: abrConfig.ewmaSlow,
+          abrBandWidthFactor: abrConfig.bandwidthFactor,
+          abrBandWidthUpFactor: abrConfig.bandwidthUpFactor,
+
+          // Stall recovery
+          highBufferWatchdogPeriod: 2,
+          nudgeOffset: 0.1,
+          nudgeMaxRetry: 5,
+
+          // Loading settings
+          fragLoadingTimeOut: isLowEndDevice || isSlowConnection ? 15000 : 20000,
           fragLoadingMaxRetry: 6,
           fragLoadingRetryDelay: 1000,
-          enableWorker: true,
+          manifestLoadingTimeOut: 10000,
+          manifestLoadingMaxRetry: 4,
+          levelLoadingTimeOut: 10000,
+          levelLoadingMaxRetry: 4,
+
+          // Performance
+          enableWorker: !isLowEndDevice,
           lowLatencyMode: false,
-          backBufferLength: isMobile ? 5 : 15,
+          progressive: isMobile || isSlowConnection,
           testBandwidth: true,
-          progressive: isMobile
+
+          //Cappping for constrained devices
+          capLevelToPlayerSize: isMobile,
+          capLevelOnFPSDrop: true,
+          fpsDroppedMonitoringPeriod: 5000,
+          fpsDroppedMonitoringThreshold: 0.2
         });
 
         streamPlayer.loadSource(STREAM_CONFIG.hlsSource);
@@ -515,6 +720,28 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       function initNativeHLS() {
         streamType = 'native';
         video.src = STREAM_CONFIG.hlsSource;
+
+        // iOS/Safari native HLS optimizations
+        if (isIOS) {
+          // Prefer fullscreen video on iOS for better performance
+          video.setAttribute('playsinline', '');
+          video.setAttribute('webkit-playsinline', '');
+
+          // iOS handles ABR natively - hint preferred bandwidth
+          if (isSlowConnection) {
+            video.setAttribute('x-webkit-airplay', 'allow');
+          }
+        }
+
+        // Native HLS quality change detection (Safari)
+        if (video.audioTracks) {
+          video.audioTracks.addEventListener('change', updateActiveQualityUI);
+        }
+
+        // Monitor for stalls in native playback
+        video.addEventListener('stalled', function() {
+          handleBufferStall();
+        });
       }
       
       function fallbackToMP4() {
@@ -697,34 +924,100 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         var targetLevel = findClosestQuality(levels, parseInt(quality, 10));
         if (targetLevel === -1) return;
 
-        // Save state, destroy, and recreate with locked level
-        var savedTime = video.currentTime;
-        var shouldPlay = !video.paused;
-
-        streamPlayer.destroy();
-
-        // Recreate with same config but locked to target level
-        initHLS();
-
+        // Use nextLevel for smooth switching without stream reload
+        // This avoids the expensive destroy/recreate cycle
         streamPlayer.currentLevel = targetLevel;
         streamPlayer.loadLevel = targetLevel;
         streamPlayer.nextLevel = targetLevel;
 
-        // Seek and resume once manifest is parsed
-        var onParsed = function() {
-          streamPlayer.off(Hls.Events.MANIFEST_PARSED, onParsed);
-
-          streamPlayer.currentLevel = targetLevel;
-          streamPlayer.loadLevel = targetLevel;
-          streamPlayer.nextLevel = targetLevel;
-
-          if (savedTime > 0) video.currentTime = savedTime;
-          if (shouldPlay) video.play().catch(function() {});
+        // Listen for level switch completion
+        var onLevelSwitched = function() {
+          streamPlayer.off(Hls.Events.LEVEL_SWITCHED, onLevelSwitched);
           finishQualitySwitch();
         };
-        streamPlayer.on(Hls.Events.MANIFEST_PARSED, onParsed);
+        streamPlayer.on(Hls.Events.LEVEL_SWITCHED, onLevelSwitched);
+
+        // Fallback timeout in case event doesn't fire
+        setTimeout(function() {
+          streamPlayer.off(Hls.Events.LEVEL_SWITCHED, onLevelSwitched);
+          finishQualitySwitch();
+        }, 5000);
       }
-      
+
+      // ============================================
+      // Stall Detection & Recovery
+      // ============================================
+      var stallCount = 0;
+      var lastStallTime = 0;
+      var stallRecoveryTimeout = null;
+
+      function handleBufferStall() {
+        var now = Date.now();
+
+        // Reset stall count if last stall was > 30s ago
+        if (now - lastStallTime > 30000) {
+          stallCount = 0;
+        }
+        lastStallTime = now;
+        stallCount++;
+
+        // Progressive recovery strategies
+        if (stallCount <= 2) {
+          // First attempts: just wait for buffer
+          return;
+        }
+
+        if (stallCount <= 4) {
+          // Try dropping quality
+          if (streamType === 'hls' && streamPlayer) {
+            var currentLevel = streamPlayer.currentLevel;
+            if (currentLevel > 0) {
+              streamPlayer.nextLevel = currentLevel - 1;
+            }
+          } else if (streamType === 'dash' && streamPlayer) {
+            var qualityIndex = streamPlayer.getQualityFor('video');
+            if (qualityIndex > 0) {
+              streamPlayer.setQualityFor('video', qualityIndex - 1);
+            }
+          }
+          return;
+        }
+
+        // Severe stalling: attempt media recovery
+        if (streamType === 'hls' && streamPlayer) {
+          streamPlayer.recoverMediaError();
+        }
+      }
+
+      // HLS-specific stall handler
+      function handleHLSStall() {
+        if (!streamPlayer || streamType !== 'hls') return;
+
+        // Check if we're actually stalled (no progress for 3+ seconds while not paused)
+        if (!video.paused && video.readyState < 3) {
+          handleBufferStall();
+        }
+      }
+
+      // Periodic stall check for edge cases
+      var stallCheckInterval = null;
+
+      function startStallMonitoring() {
+        if (stallCheckInterval) return;
+        stallCheckInterval = setInterval(function() {
+          if (!video.paused && !video.ended && video.readyState < 3) {
+            handleBufferStall();
+          }
+        }, 3000);
+      }
+
+      function stopStallMonitoring() {
+        if (stallCheckInterval) {
+          clearInterval(stallCheckInterval);
+          stallCheckInterval = null;
+        }
+      }
+
       function updateActiveQualityUI() {
         if (streamType === 'hls' && streamPlayer && streamPlayer.levels) {
           const currentLevel = streamPlayer.currentLevel;
@@ -1050,29 +1343,46 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       video.addEventListener('ended', stopBufferMonitoring);
       
       // ============================================
-      // Loading State
+      // Loading State & Stall Integration
       // ============================================
       let bufferingTimeout = null;
-      
+      let stallDetectionTimeout = null;
+
       video.addEventListener('waiting', function() {
         if (isQualitySwitching) return;
-        
+
         clearTimeout(bufferingTimeout);
         bufferingTimeout = setTimeout(function() {
           if (videoContainer && !isQualitySwitching) {
             videoContainer.classList.add('buffering');
           }
         }, 200);
+
+        // Trigger stall detection if waiting persists
+        clearTimeout(stallDetectionTimeout);
+        stallDetectionTimeout = setTimeout(function() {
+          if (!video.paused && video.readyState < 3) {
+            handleBufferStall();
+          }
+        }, 3000);
       });
-      
+
       function clearBuffering() {
         clearTimeout(bufferingTimeout);
+        clearTimeout(stallDetectionTimeout);
         if (videoContainer) videoContainer.classList.remove('buffering');
         if (isQualitySwitching) finishQualitySwitch();
+        // Reset stall count on successful playback
+        stallCount = 0;
       }
 
-      video.addEventListener('playing', clearBuffering);
+      video.addEventListener('playing', function() {
+        clearBuffering();
+        startStallMonitoring();
+      });
       video.addEventListener('canplaythrough', clearBuffering);
+      video.addEventListener('pause', stopStallMonitoring);
+      video.addEventListener('ended', stopStallMonitoring);
       
       // ============================================
       // Playback Speed
@@ -1415,10 +1725,30 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         }
         
         // ============================================
+        // Network Change Adaptation
+        // ============================================
+        if (connection) {
+          connection.addEventListener('change', function() {
+            var newEffectiveType = connection.effectiveType;
+            var shouldDowngrade = newEffectiveType === 'slow-2g' || newEffectiveType === '2g' || connection.saveData;
+
+            if (shouldDowngrade && streamPlayer) {
+              // Drop to lowest quality on poor connection
+              if (streamType === 'hls' && streamPlayer.levels && streamPlayer.levels.length > 0) {
+                streamPlayer.nextLevel = 0;
+              } else if (streamType === 'dash') {
+                streamPlayer.setQualityFor('video', 0);
+              }
+            }
+          });
+        }
+
+        // ============================================
         // Cleanup
         // ============================================
         window.addEventListener('beforeunload', function() {
           stopBufferMonitoring();
+          stopStallMonitoring();
           if (rafId) {
             cancelAnimationFrame(rafId);
             rafId = null;
@@ -1427,7 +1757,23 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             streamType === 'hls' ? streamPlayer.destroy() : streamPlayer.reset();
           }
         });
-        
+
+        // Visibility change - reduce resource usage when tab hidden
+        document.addEventListener('visibilitychange', function() {
+          if (document.hidden) {
+            // Reduce buffer when hidden to save memory
+            if (streamType === 'hls' && streamPlayer) {
+              streamPlayer.config.maxBufferLength = 3;
+            }
+          } else {
+            // Restore buffer when visible
+            if (streamType === 'hls' && streamPlayer) {
+              var bufferConfig = getBufferConfig();
+              streamPlayer.config.maxBufferLength = bufferConfig.maxBufferLength;
+            }
+          }
+        });
+
         // Start
         init();
       }

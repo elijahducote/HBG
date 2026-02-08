@@ -10,10 +10,9 @@
    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
    <meta name="description" content="Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area." />
    <meta name="keywords" content="" />
-   <link href="/src/shared/pure.css" rel="stylesheet" type="text/css" />
-   <script type="application/javascript" src="https://js.hcaptcha.com/1/api.js?hl=en&amp;recaptchacompat=on"></script>
-   <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/eruda"></script>
-   <script type="text/javascript" src="/src/shared/index.js"></script>
+   <script src="https://js.hcaptcha.com/1/api.js?hl=en&amp;recaptchacompat=on" type="application/javascript"></script>
+   <script src="/src/shared/index.js" type="text/javascript"></script>
+   <link type="text/css" href="/src/shared/pure.css" rel="stylesheet" />
    <link type="text/css" href="/src/shared/index.css" rel="stylesheet" />
    <link type="text/css" href="/src/contact/main.css" rel="stylesheet" />
   </head>
@@ -55,6 +54,11 @@
         <hr />
         <div class="divider"></div>
         <input placeholder="Ex: John Doe / Jane Doe" class="form-input" type="text" name="givenName" required="true" />
+        <label>Phone Number</label>
+        <div class="divider"></div>
+        <hr />
+        <div class="divider"></div>
+        <input placeholder="Ex: +1 (000)-000-0000" class="form-input" type="tel" name="phone" required="true" />
         <label>Your Industry</label>
         <div class="divider"></div>
         <hr />
@@ -69,7 +73,7 @@
         <div class="divider"></div>
         <hr />
         <div class="divider"></div>
-        <textarea placeholder="Hello, I am interested in discussing Houston Buisness Group to join alongside its mission." class="form-input" maxlength="960" minlength="0" name="message" required="true"></textarea>
+        <textarea placeholder="Hello, I am interested in discussing Houston Business Group to join alongside its mission." class="form-input" maxlength="960" minlength="0" name="message" required="true"></textarea>
         <label>
          Join mailing list?
          <input value="true" type="checkbox" name="enroll" />
