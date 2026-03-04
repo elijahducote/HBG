@@ -28,7 +28,7 @@ export default function Contact(tags) {
     htm(tags, undefined, "hr"),
     htm(tags, undefined, "div", {class: "divider"}),
     htm(tags, undefined,"textarea",{placeholder:"Hello, I am interested in discussing Houston Business Group to join alongside its mission.",class:"form-input",maxlength:"960",minlength:"0",name:"message",required:true}),
-    htm(tags, ["Join mailing list?",htm(tags, undefined, "input", {value:"true",type:"checkbox",name:"enroll"}),htm(tags, undefined, "div", {class: "divider"}),htm(tags, undefined, "hr"),htm(tags, undefined, "div", {class: "divider"})],"label"),
+    htm(tags, ["Join mailing list?",htm(tags, undefined, "input", {value:"true",type:"checkbox",name:"enroll",checked:"true"}),htm(tags, undefined, "div", {class: "divider"}),htm(tags, undefined, "hr"),htm(tags, undefined, "div", {class: "divider"})],"label"),
     htm(tags, undefined, "div", {class:"h-captcha","data-sitekey":"884a606e-fd98-4c56-a6ca-f7004ddcbe5a","data-theme":"dark","data-size":"compact"}),
     htm(tags,"SUBMIT","button",{class:"pure-button pure-button-primary"}),
   ], "form", {action:"/go/join-hbg",method:"POST",type:"multipart/form-data",class: "pure-form pure-form-stacked pure-form-aligned"}),"div",{class:"full-width-form"});
