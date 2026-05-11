@@ -9,6 +9,6 @@ export default function Events(tags) {
     htm(tags, undefined, "div", {class: "divider"}),
     htm(tags, undefined, "hr"),
     htm(tags, undefined, "div", {class: "divider"}),
-    htm(tags, undefined, "img", {src:"/cdn/events/typorama.png",class:"cover"}),
+    htm(tags, undefined, "img", {src:"/cdn/events/flyer.jpg",class:"cover"}),
   ], "section", {id:"events"});
 }
