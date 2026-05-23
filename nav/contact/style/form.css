@@ -6,7 +6,29 @@ input, textarea {
   width: 75%;
   display: block;
 }
-
+.intro span {
+  display: inline-block;
+}
+.meet-time {
+ font-weight: 500;
+ text-decoration: underline;
+ font-style: italic;
+ color:yellow;
+}
+.meet-frequency {
+ font-weight: 600;
+ font-style: italic;
+}
+.meet-day {
+ font-weight: 700;
+}
+.intro {
+  font-size: 0.875em;
+  line-height: 1.6;
+  margin-bottom: 1em;
+  margin-top: 0.5em;
+  text-shadow: var(--shadow-text);
+}
 .full-width-form button {
   margin-top: 0.875em;
   padding: .75em;

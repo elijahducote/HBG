@@ -3,6 +3,8 @@ import {htm} from "../../bits/utility.js";
 
 export default function Contact(tags) {
   return htm(tags,htm(tags,[
+    htm(tags,[htm(tags,"HBG meets every 2nd Monday","span",{class:"meet-day"}),htm(tags,"of the month","span",{class:"meet-frequency"}), htm(tags,"from 4:30-6pm.","span",{class:"meet-time"})],"p",{class:"intro"}),
+    htm(tags, undefined, "div", {class: "divider"}),
     htm(tags,"Name / Given Name","label"),
     htm(tags, undefined, "div", {class: "divider"}),
     htm(tags, undefined, "hr"),
