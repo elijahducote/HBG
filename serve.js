@@ -16,7 +16,8 @@ reservedPaths = [
   "cdn",
   "web",
   "src",
-  "episode"  // Add assets to reserved paths
+  "episode",  // Add assets to reserved paths
+  "flyer"
 ];
 
 // Definitions
@@ -133,6 +134,18 @@ app.get(
   serveStatic({
     root: "./nav",
     rewriteRequestPath: (path) => path.replace(/^\/cdn\/([^\/]+)\/(.+)$/, "/$1/media/$2"),
+    mimes: MIME_TYPES
+  })
+);
+
+// ============================================
+// Flyer Route (dated typorama images)
+// ============================================
+app.get(
+  "/flyer/*",
+  serveStatic({
+    root: "./flyer",
+    rewriteRequestPath: (path) => path.replace(/^\/flyer\/(\/?.+)?$/, "/$1"),
     mimes: MIME_TYPES
   })
 );
