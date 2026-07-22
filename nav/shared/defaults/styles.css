@@ -58,7 +58,7 @@ a {
 }
 
 div.wrapper.topnav {
-  z-index: 3;
+  z-index: 5;
   height: 3em;
   border-radius: 2em;
 }
@@ -98,6 +98,10 @@ div.wrapper.topnav div svg {
   max-height: 100%;
   margin: 0;
   object-fit: cover;
+}
+
+div.wrapper.topnav div svg.nav-icon {
+  padding: 0.125em;
 }
 
 div.wrapper.topnav div h2,
@@ -169,7 +173,7 @@ div.wrapper.tab-list {
   align-items: center;
 }
 
-#home, #events, #contact {
+#home, #events, #contact, #market {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;

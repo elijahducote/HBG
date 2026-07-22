@@ -3,6 +3,7 @@
   [
     "home",
     "events",
+    "market",
     "contact"
   ],
   "home": {
@@ -34,6 +35,18 @@
       "/src/shared/index.js",
       "/src/shared/index.css",
       "/src/events/index.js"
+    ]
+  },
+  "market": {
+    "title": "Market - HBG",
+    "metadata":
+    [
+      ["viewport", "width=device-width,initial-scale=1.0"],
+      ["description", "Blending Houston's bold artists and sharp entrepreneurs into a powerhouse network that gives encouragement, referrals, and builds business in the Houston, TX area."],
+      ["keywords", ""],
+      "/src/shared/index.js",
+      "/src/shared/index.css",
+      "/src/market/main.css"
     ]
   },
   "contact": {

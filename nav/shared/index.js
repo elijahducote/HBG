@@ -30,79 +30,16 @@ function initAnimations() {
 }
 
 function initNavHoverEffects() {
-  const currentPath = window.location.pathname.substring(1) || "home",
-        navIcons = document.querySelectorAll("div.wrapper.topnav div svg"),
-        navText = document.querySelectorAll("div.wrapper.topnav div h2"),
+  const navIcons = document.querySelectorAll("div.wrapper.topnav div svg"),
         nth = navIcons.length;
   
-  // Apply styles based on state: active (current page), hovered, or inactive
-  function applyNavItemStyles(index, isActive, isHovered) {
-    const icon = navIcons[index],
-          text = navText[index],
-          container = icon.parentElement;
-    
-    if (isHovered) {
-      // Hovered state: full opacity, glow animation
-      container.style.animation = "glow 4s ease-in-out infinite";
-      Object.assign(icon.style, { opacity: "1", filter: "none" });
-      text.style.setProperty("opacity", "1", "important");
-    } else if (isActive) {
-      // Active page state (when not hovering): glow animation
-      container.style.animation = "glow 4s ease-in-out infinite";
-      Object.assign(icon.style, { opacity: "1", filter: "none" });
-      text.style.setProperty("opacity", "1", "important");
-    } else {
-      // Inactive/dimmed state: no animation, reduced opacity
-      container.style.animation = "4s glower infinite";
-      Object.assign(icon.style, { opacity: ".75", filter: "grayscale(50%)" });
-      text.style.setProperty("opacity", "0.75", "important");
-    }
-  }
-  
-  // Check if nav item at index corresponds to current page
-  function isCurrentNav(index) {
-    const icon = navIcons[index],
-          dataLink = icon.parentElement.dataset.link || "/",
-          normalizedLink = dataLink === "/" ? "home" : dataLink;
-    return normalizedLink === currentPath;
-  }
-  
-  // Reset all nav items to default state (active glows, others dimmed)
-  function resetToDefault() {
-    let itR8 = nth, ndx;
-    for (; itR8; --itR8) {
-      ndx = nth - itR8;
-      applyNavItemStyles(ndx, isCurrentNav(ndx), false);
-    }
-  }
-  
-  // Setup hover event listeners for each nav item
-  let itR8 = nth, ndx, icon, container;
+  // Apply glow animation and full opacity to all nav items
+  let itR8 = nth, ndx;
   for (; itR8; --itR8) {
     ndx = nth - itR8;
-    icon = navIcons[ndx];
-    container = icon.parentElement;
-    
-    // Closure to capture current index
-    (function(currentIndex) {
-      container.addEventListener("mouseenter", function() {
-        // On hover: highlight hovered item, dim all others (including active)
-        let j = nth, idx;
-        for (; j; --j) {
-          idx = nth - j;
-          applyNavItemStyles(idx, false, idx === currentIndex);
-        }
-      });
-      
-      container.addEventListener("mouseleave", function() {
-        // On leave: restore default state
-        resetToDefault();
-      });
-    })(ndx);
+    navIcons[ndx].parentElement.style.animation = "glow 4s ease-in-out infinite";
+    Object.assign(navIcons[ndx].style, { opacity: "1", filter: "none" });
   }
-  
-  // Initialize with default state
-  resetToDefault();
 }
 
 
@@ -121,12 +58,9 @@ function simulateLinkClick(url, target = "_self") {
 
 
 function updateNavIcons() {
-  const currentPath = window.location.pathname.substring(1) || "home",
-  navIcons = document.querySelectorAll("div.wrapper.topnav div svg"),
-  navText = document.querySelectorAll("div.wrapper.topnav div h2"),
+  const navIcons = document.querySelectorAll("div.wrapper.topnav div svg"),
   nth = navIcons.length,
   root = document.querySelector("div.wrapper.topnav");
-  let itR8 = nth, ndx, icon, text, dataLink, normalizedLink;
   root.addEventListener("click", function(e) {
     const node = e.target;
     if (node.tagName === "DIV") simulateLinkClick(node.dataset.link);
@@ -139,18 +73,10 @@ function updateNavIcons() {
     if (node.tagName === "H2" || node.tagName === "svg") simulateLinkClick(node.parentElement.dataset.link);
   });
   
+  let itR8 = nth, ndx;
   for (;itR8;--itR8) {
     ndx = nth - itR8;
-    icon = navIcons[ndx];
-    text = navText[ndx];
-    dataLink = icon.parentElement.dataset.link || "/";
-    normalizedLink = dataLink === "/" ? "home" : dataLink;
-    if (normalizedLink === currentPath) icon.parentElement.style.animation = "glow 4s ease-in-out infinite";
-    else {
-      Object.assign(icon.style, {opacity:".75", filter:"grayscale(50%)"});
-      text.style.setProperty("opacity","0.75","important");
-      /*Object.assign(text.style, {opacity:".5", filter:"grayscale(50%)"});*/
-    }
+    navIcons[ndx].parentElement.style.animation = "glow 4s ease-in-out infinite";
   }
 }
 

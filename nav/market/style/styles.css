@@ -1,0 +1,59 @@
+#market {
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+#market .market-announce {
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
+  text-align: center;
+  padding: 2em 1.5em;
+  border-radius: 0.625em;
+  background: var(--gradient-dark-alpha);
+  border: none;
+  margin: 1em auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+#market .market-announce h1 {
+  display: block;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-shadow:
+    0 0.15em 0.3em rgba(0, 255, 255, 0.6),
+    0 0.4em 0.8em rgba(0, 255, 255, 0.35),
+    0 0.8em 1.5em rgba(0, 0, 0, 0.5);
+  margin: 0;
+}
+
+#market .market-announce h2 {
+  display: block;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  opacity: 0.7;
+  margin-top: 0.5em;
+  text-shadow: var(--shadow-text);
+}
+
+#market .market-divider {
+  width: 13em;
+  max-width: 100%;
+  margin: 1.25em auto;
+}
+
+#market hr {
+  border-top: 0.125em solid #0FF;
+  border-radius: 0.125em;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  width: 13em;
+  max-width: 100%;
+  margin: 0.25em auto;
+  opacity: 0.5;
+}
