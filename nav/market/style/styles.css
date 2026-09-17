@@ -9,13 +9,23 @@
   isolation: isolate;
   z-index: 1;
   text-align: center;
-  padding: 2em 1.5em;
+  padding: 1.5em;
   border-radius: 0.625em;
   background: var(--gradient-dark-alpha);
   border: none;
   margin: 1em auto;
   width: 100%;
   max-width: 100%;
+}
+
+#market .market-announce img.promo {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  margin: 0 auto 1em;
+  border-radius: 0.5em;
+  filter: var(--shadow-drop);
 }
 
 #market .market-announce h1 {
@@ -38,22 +48,4 @@
   opacity: 0.7;
   margin-top: 0.5em;
   text-shadow: var(--shadow-text);
-}
-
-#market .market-divider {
-  width: 13em;
-  max-width: 100%;
-  margin: 1.25em auto;
-}
-
-#market hr {
-  border-top: 0.125em solid #0FF;
-  border-radius: 0.125em;
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
-  width: 13em;
-  max-width: 100%;
-  margin: 0.25em auto;
-  opacity: 0.5;
 }

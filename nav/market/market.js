@@ -5,11 +5,13 @@ export default function Market(tags) {
   [
     htm(tags,
       [
-        htm(tags, "Fall Market Coming soon", "h1"),
-        htm(tags, undefined, "div", {class: "divider"}),
-        htm(tags, undefined, "hr"),
-        htm(tags, undefined, "div", {class: "divider"}),
-        htm(tags, "Stay tuned for updates", "h2"),
+        htm(tags, undefined, "img", {
+          src: "/cdn/market/market.png",
+          class: "promo",
+          alt: "Market promo"
+        }),
+        htm(tags, "The Fall Market", "h1"),
+        //htm(tags, "Stay tuned for updates", "h2"),
       ],
       "div",
       {class: "market-announce"}
