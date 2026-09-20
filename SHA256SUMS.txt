@@ -1,0 +1,3 @@
+cbffe796c69369c6176584fb75d3d82b8b03ea15b295629ad989e7764a7e1e1c  opencode-native-1.18.28-upx.xz
+404006277b9abe9170b1f3dbb1d5d2823ce89eeb77ce7dc8822c91f7e8b45f9d  opencode-compressed_1.18.28_aarch64.deb
+54ac25000c05dd67003d5001884180069d4b1aa17adf9c1588824b86ef40030d  opencode-compressed-1.18.28-1-aarch64.pkg.tar.gz
